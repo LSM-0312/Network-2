@@ -9,7 +9,11 @@ public class PlayerAvatar : NetworkBehaviour
     [SerializeField] private Color robberColor = Color.red;
     [SerializeField] private Color defaultColor = Color.white;
 
+    [Header("Catch")]
+    [SerializeField] private float catchInvulnerableDuration = 3f;
+
     [Networked] public PlayerRole Role { get; set; }
+    [Networked] private TickTimer CatchInvulnTimer { get; set; }
 
     private PlayerRole _lastAppliedRole = (PlayerRole)(-1);
 
@@ -24,6 +28,27 @@ public class PlayerAvatar : NetworkBehaviour
             ApplyRoleVisual();
     }
 
+    public bool IsCatchInvulnerable()
+    {
+        return !CatchInvulnTimer.ExpiredOrNotRunning(Runner);
+    }
+
+    public void StartCatchInvulnerability()
+    {
+        if (!Object.HasStateAuthority)
+            return;
+
+        CatchInvulnTimer = TickTimer.CreateFromSeconds(Runner, catchInvulnerableDuration);
+    }
+
+    public void StartCatchInvulnerability(float duration)
+    {
+        if (!Object.HasStateAuthority)
+            return;
+
+        CatchInvulnTimer = TickTimer.CreateFromSeconds(Runner, duration);
+    }
+
     private void ApplyRoleVisual()
     {
         Color color = defaultColor;
@@ -33,6 +58,7 @@ public class PlayerAvatar : NetworkBehaviour
             case PlayerRole.Cop:
                 color = copColor;
                 break;
+
             case PlayerRole.Robber:
                 color = robberColor;
                 break;
