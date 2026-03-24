@@ -137,13 +137,14 @@ namespace SlimUI.ModernMenu{
 			mainMenu.SetActive(true);
 		}
 
-		public void LoadScene(string scene){
-			if(scene != ""){
-				StartCoroutine(LoadAsynchronously(scene));
-			}
-		}
+        public void LoadScene(string scene){
+            if (scene != "")
+            {
+                SceneManager.LoadScene(scene);
+            }
+        }
 
-		public void  DisablePlayCampaign(){
+        public void  DisablePlayCampaign(){
 			playMenu.SetActive(false);
 		}
 
