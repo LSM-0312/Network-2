@@ -391,6 +391,66 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 80510249}
   m_CullTransparentMesh: 1
+--- !u!1 &345938640 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5661589202516365634, guid: 2f654c5ced3ffad418898a1fc962d34a, type: 3}
+  m_PrefabInstance: {fileID: 1120452737011525645}
+  m_PrefabAsset: {fileID: 0}
+--- !u!224 &345938641 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 2003758238525646168, guid: 2f654c5ced3ffad418898a1fc962d34a, type: 3}
+  m_PrefabInstance: {fileID: 1120452737011525645}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &345938642 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7115698338181660283, guid: 2f654c5ced3ffad418898a1fc962d34a, type: 3}
+  m_PrefabInstance: {fileID: 1120452737011525645}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &345938643 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7115758786620753449, guid: 2f654c5ced3ffad418898a1fc962d34a, type: 3}
+  m_PrefabInstance: {fileID: 1120452737011525645}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &345938644 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7116083981068580989, guid: 2f654c5ced3ffad418898a1fc962d34a, type: 3}
+  m_PrefabInstance: {fileID: 1120452737011525645}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &345938645
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 345938640}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 227c9f4f2849c3d4dbffe66e4b88fbb0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  btnReturn: {fileID: 345938644}
+  btnCreate: {fileID: 345938643}
+  btnRefresh: {fileID: 345938642}
+  contentParent: {fileID: 345938641}
+  itemTemplate: {fileID: 434145568}
 --- !u!1 &434145568 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 8752937617580417652, guid: 2f654c5ced3ffad418898a1fc962d34a, type: 3}
@@ -451,6 +511,53 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!1 &756848734
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 756848736}
+  - component: {fileID: 756848735}
+  m_Layer: 0
+  m_Name: LobbyNetworkManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &756848735
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 756848734}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7ea70c35d65d06141b6ec72644206b3f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  roomSceneBuildIndex: 2
+  roomNamePrefix: Room_
+  maxPlayers: 4
+--- !u!4 &756848736
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 756848734}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &997687159
 GameObject:
   m_ObjectHideFlags: 0
@@ -734,6 +841,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1858554466}
   m_CullTransparentMesh: 1
+--- !u!114 &1919174378
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 434145568}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3c2362a419d47b4b9cff10278db086b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  roomNameText: {fileID: 10107782}
+  playerCountText: {fileID: 80510251}
+  statusText: {fileID: 1620066272}
 --- !u!1 &2074063161
 GameObject:
   m_ObjectHideFlags: 0
@@ -817,7 +939,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 1858554467}
   m_Direction: 3
   m_Value: 0
-  m_Size: 0.2
+  m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -1047,6 +1169,9 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 1620066271}
     m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5661589202516365634, guid: 2f654c5ced3ffad418898a1fc962d34a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 345938645}
     - targetCorrespondingSourceObject: {fileID: 7157022481098892501, guid: 2f654c5ced3ffad418898a1fc962d34a, type: 3}
       insertIndex: -1
       addedObject: {fileID: 0}
@@ -1074,6 +1199,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 8752937617580417652, guid: 2f654c5ced3ffad418898a1fc962d34a, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1186890624}
+    - targetCorrespondingSourceObject: {fileID: 8752937617580417652, guid: 2f654c5ced3ffad418898a1fc962d34a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1919174378}
     - targetCorrespondingSourceObject: {fileID: 7156380049871484827, guid: 2f654c5ced3ffad418898a1fc962d34a, type: 3}
       insertIndex: -1
       addedObject: {fileID: 0}
@@ -1190,7 +1318,7 @@ MonoBehaviour:
   m_ScrollSensitivity: 1
   m_Viewport: {fileID: 1120452737011525647}
   m_HorizontalScrollbar: {fileID: 0}
-  m_VerticalScrollbar: {fileID: 0}
+  m_VerticalScrollbar: {fileID: 2074063163}
   m_HorizontalScrollbarVisibility: 0
   m_VerticalScrollbarVisibility: 0
   m_HorizontalScrollbarSpacing: 0
@@ -1203,3 +1331,4 @@ SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 1120452737011525645}
+  - {fileID: 756848736}
