@@ -1,7 +1,8 @@
+using Fusion;
+using Fusion.Photon.Realtime;
+using Fusion.Sockets;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Fusion;
-using Fusion.Sockets;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -14,88 +15,122 @@ public class LobbyFusionManager : MonoBehaviour, INetworkRunnerCallbacks
     [SerializeField] private string roomNamePrefix = "Room_";
     [SerializeField] private int maxPlayers = 4;
 
-    private NetworkRunner runner;
+    private NetworkRunner lobbyRunner;
+    private NetworkRunner roomRunner;
     private LobbyUIManager uiManager;
-    private bool isProcessing = false;
 
-    private async void Start()
+    private bool isRefreshing = false;
+    private bool hasReceivedSessionList = false;
+    private bool isCreatingRoom = false;
+    private bool isLeaving = false;
+    private bool isQuickJoining = false;
+
+    private void Start()
     {
         uiManager = FindObjectOfType<LobbyUIManager>();
-        await CreateLobbyRunnerAndJoinLobby();
+        RefreshLobby();
     }
 
-    private NetworkRunner CreateNewRunner(string runnerObjectName)
+    private NetworkRunner CreateRunner(string runnerName)
     {
-        GameObject go = new GameObject(runnerObjectName);
+        GameObject go = new GameObject(runnerName);
         DontDestroyOnLoad(go);
 
-        NetworkRunner newRunner = go.AddComponent<NetworkRunner>();
-        newRunner.ProvideInput = false;
-        newRunner.AddCallbacks(this);
+        NetworkRunner runner = go.AddComponent<NetworkRunner>();
+        runner.ProvideInput = false;
+        runner.AddCallbacks(this);
 
-        return newRunner;
+        return runner;
     }
 
-    private async Task ShutdownRunner()
+    private async Task ShutdownRunner(NetworkRunner targetRunner)
     {
-        if (runner == null)
+        if (targetRunner == null)
             return;
 
-        await runner.Shutdown();
+        try
+        {
+            targetRunner.RemoveCallbacks(this);
+        }
+        catch
+        {
+        }
 
-        if (runner != null && runner.gameObject != null)
-            Destroy(runner.gameObject);
+        await targetRunner.Shutdown();
 
-        runner = null;
+        if (targetRunner.gameObject != null)
+            Destroy(targetRunner.gameObject);
 
-        await Task.Delay(200);
+        await Task.Delay(100);
     }
 
-    private async Task CreateLobbyRunnerAndJoinLobby()
+    private async Task ShutdownLobbyRunner()
     {
-        await ShutdownRunner();
+        if (lobbyRunner == null)
+            return;
 
-        runner = CreateNewRunner("LobbyRunner");
-        await runner.JoinSessionLobby(SessionLobby.Shared);
+        NetworkRunner runnerToShutdown = lobbyRunner;
+        lobbyRunner = null;
+        await ShutdownRunner(runnerToShutdown);
+    }
+
+    private async Task ShutdownRoomRunner()
+    {
+        if (roomRunner == null)
+            return;
+
+        NetworkRunner runnerToShutdown = roomRunner;
+        roomRunner = null;
+        await ShutdownRunner(runnerToShutdown);
     }
 
     public async void RefreshLobby()
     {
-        if (isProcessing)
+        if (isRefreshing || isCreatingRoom || isLeaving || isQuickJoining)
             return;
 
-        isProcessing = true;
+        isRefreshing = true;
+        hasReceivedSessionList = false;
 
         uiManager = FindObjectOfType<LobbyUIManager>();
+        if (uiManager != null)
+            uiManager.ClearRoomList();
 
-        if (runner == null)
+        await ShutdownLobbyRunner();
+
+        lobbyRunner = CreateRunner("LobbyQueryRunner");
+
+        Debug.Log("로비 목록 1회 조회 시작");
+
+        var result = await lobbyRunner.JoinSessionLobby(SessionLobby.ClientServer);
+
+        Debug.Log("로비 목록 조회 결과 = " + result.Ok);
+
+        if (!result.Ok)
         {
-            await CreateLobbyRunnerAndJoinLobby();
-            isProcessing = false;
-            return;
+            Debug.LogError("로비 목록 조회 실패");
+            isRefreshing = false;
+            await ShutdownLobbyRunner();
         }
-
-        await runner.JoinSessionLobby(SessionLobby.Shared);
-
-        isProcessing = false;
     }
 
     public async void CreateRoom()
     {
-        if (isProcessing)
+        if (isRefreshing || isCreatingRoom || isLeaving || isQuickJoining)
             return;
 
-        isProcessing = true;
+        isCreatingRoom = true;
 
         string roomName = roomNamePrefix + Random.Range(1000, 9999);
 
-        await ShutdownRunner();
+        await ShutdownLobbyRunner();
+        await ShutdownRoomRunner();
 
-        runner = CreateNewRunner("RoomRunner");
+        roomRunner = CreateRunner("RoomRunner");
 
-        StartGameResult result = await runner.StartGame(new StartGameArgs
+        StartGameResult result = await roomRunner.StartGame(new StartGameArgs
         {
-            GameMode = GameMode.Shared,
+            GameMode = GameMode.Host,
             SessionName = roomName,
             PlayerCount = maxPlayers,
             Scene = SceneRef.FromIndex(roomSceneBuildIndex)
@@ -106,27 +141,70 @@ public class LobbyFusionManager : MonoBehaviour, INetworkRunnerCallbacks
         if (!result.Ok)
         {
             Debug.LogError($"방 생성 실패: {result.ShutdownReason}");
+            await ShutdownRoomRunner();
         }
 
-        isProcessing = false;
+        isCreatingRoom = false;
+    }
+
+    public async void QuickJoin()
+    {
+        if (isRefreshing || isCreatingRoom || isLeaving || isQuickJoining)
+            return;
+
+        isQuickJoining = true;
+
+        await ShutdownLobbyRunner();
+        await ShutdownRoomRunner();
+
+        roomRunner = CreateRunner("QuickJoinRunner");
+
+        StartGameResult result = await roomRunner.StartGame(new StartGameArgs
+        {
+            GameMode = GameMode.Client,
+            MatchmakingMode = MatchmakingMode.FillRoom,
+            Scene = SceneRef.FromIndex(roomSceneBuildIndex)
+        });
+
+        Debug.Log($"빠른 참가 결과: {result.Ok}");
+
+        if (!result.Ok)
+        {
+            Debug.LogWarning($"참가 가능한 방이 없습니다. 사유: {result.ShutdownReason}");
+            await ShutdownRoomRunner();
+        }
+
+        isQuickJoining = false;
     }
 
     public async void ReturnToLobby1()
     {
-        if (isProcessing)
+        if (isRefreshing || isCreatingRoom || isLeaving || isQuickJoining)
             return;
 
-        isProcessing = true;
+        isLeaving = true;
 
-        await ShutdownRunner();
+        await ShutdownLobbyRunner();
+        await ShutdownRoomRunner();
+
         SceneManager.LoadScene("Lobby1");
     }
 
-    public void OnSessionListUpdated(NetworkRunner runner, List<SessionInfo> sessionList)
+    public async void OnSessionListUpdated(NetworkRunner runner, List<SessionInfo> sessionList)
     {
-        uiManager = FindObjectOfType<LobbyUIManager>();
-        if (uiManager == null)
+        if (!isRefreshing)
             return;
+
+        if (runner != lobbyRunner)
+            return;
+
+        if (hasReceivedSessionList)
+            return;
+
+        hasReceivedSessionList = true;
+        isRefreshing = false;
+
+        Debug.Log("세션 목록 1회 수신: " + sessionList.Count);
 
         List<RoomInfoData> roomList = new List<RoomInfoData>();
 
@@ -143,7 +221,12 @@ public class LobbyFusionManager : MonoBehaviour, INetworkRunnerCallbacks
             roomList.Add(info);
         }
 
-        uiManager.RefreshRoomList(roomList);
+        uiManager = FindObjectOfType<LobbyUIManager>();
+        if (uiManager != null)
+            uiManager.RefreshRoomList(roomList);
+
+        Debug.Log("첫 목록만 반영, 로비 연결 종료");
+        await ShutdownLobbyRunner();
     }
 
     public void OnConnectedToServer(NetworkRunner runner) { }
@@ -163,37 +246,16 @@ public class LobbyFusionManager : MonoBehaviour, INetworkRunnerCallbacks
     }
 
     public void OnHostMigration(NetworkRunner runner, HostMigrationToken hostMigrationToken) { }
-
     public void OnInput(NetworkRunner runner, NetworkInput input) { }
-
     public void OnInputMissing(NetworkRunner runner, PlayerRef player, NetworkInput input) { }
-
     public void OnObjectEnterAOI(NetworkRunner runner, NetworkObject obj, PlayerRef player) { }
-
     public void OnObjectExitAOI(NetworkRunner runner, NetworkObject obj, PlayerRef player) { }
-
     public void OnPlayerJoined(NetworkRunner runner, PlayerRef player) { }
-
     public void OnPlayerLeft(NetworkRunner runner, PlayerRef player) { }
-
     public void OnReliableDataProgress(NetworkRunner runner, PlayerRef player, ReliableKey key, float progress) { }
-
     public void OnReliableDataReceived(NetworkRunner runner, PlayerRef player, ReliableKey key, System.ArraySegment<byte> data) { }
-
-    public void OnSceneLoadDone(NetworkRunner runner)
-    {
-        Debug.Log("씬 로드 완료");
-    }
-
-    public void OnSceneLoadStart(NetworkRunner runner)
-    {
-        Debug.Log("씬 로드 시작");
-    }
-
-    public void OnShutdown(NetworkRunner runner, ShutdownReason shutdownReason)
-    {
-        Debug.Log($"러너 종료: {shutdownReason}");
-    }
-
+    public void OnSceneLoadDone(NetworkRunner runner) { }
+    public void OnSceneLoadStart(NetworkRunner runner) { }
+    public void OnShutdown(NetworkRunner runner, ShutdownReason shutdownReason) { }
     public void OnUserSimulationMessage(NetworkRunner runner, SimulationMessagePtr message) { }
 }

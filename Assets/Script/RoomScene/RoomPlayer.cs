@@ -14,6 +14,7 @@ public class RoomPlayer : NetworkBehaviour
 
     public override void Spawned()
     {
+        Debug.Log($"RoomPlayer Spawned: {DisplayName}");
         if (!ActivePlayers.Contains(this))
             ActivePlayers.Add(this);
     }

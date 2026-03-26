@@ -13,7 +13,7 @@ public class RoomManager : NetworkBehaviour, INetworkRunnerCallbacks
 
     [Header("Scene")]
     [SerializeField] private int gameSceneBuildIndex = 3;
-    [SerializeField] private string lobbySceneName = "Lobby1";
+    [SerializeField] private string lobbySceneName = "SampleScene";
 
     [Header("Rule")]
     [SerializeField] private bool allowStartWithoutClients = false;
@@ -27,6 +27,7 @@ public class RoomManager : NetworkBehaviour, INetworkRunnerCallbacks
 
     public override void Spawned()
     {
+        Debug.Log("RoomManager Spawned 호출됨");
         Instance = this;
         Runner.AddCallbacks(this);
 
@@ -63,13 +64,23 @@ public class RoomManager : NetworkBehaviour, INetworkRunnerCallbacks
 
     private void EnsurePlayerSpawned(PlayerRef player)
     {
+        Debug.Log($"EnsurePlayerSpawned 호출: {player}");
+
         if (!Runner.IsServer)
+        {
+            Debug.Log("서버가 아니라서 스폰 안 함");
             return;
+        }
 
         if (spawnedPlayerObjects.ContainsKey(player))
+        {
+            Debug.Log("이미 스폰된 플레이어");
             return;
+        }
 
         NetworkObject obj = Runner.Spawn(roomPlayerPrefab, Vector3.zero, Quaternion.identity, player);
+        Debug.Log($"RoomPlayer Spawn 결과: {obj}");
+
         RoomPlayer roomPlayer = obj.GetComponent<RoomPlayer>();
 
         bool isHostPlayer = player == Runner.LocalPlayer;
@@ -77,6 +88,8 @@ public class RoomManager : NetworkBehaviour, INetworkRunnerCallbacks
 
         roomPlayer.InitializeOnServer(displayName, isHostPlayer);
         spawnedPlayerObjects.Add(player, obj);
+
+        Debug.Log($"플레이어 등록 완료: {displayName}");
     }
 
     public RoomPlayer GetLocalRoomPlayer()

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using TMPro;
+using Fusion;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -36,6 +37,13 @@ public class RoomUIManager : MonoBehaviour
 
         if (itemTemplate != null)
             itemTemplate.SetActive(false);
+
+        ApplyInitialUIState();
+    }
+
+    private void Start()
+    {
+        RefreshUI();
     }
 
     private void Update()
@@ -47,6 +55,30 @@ public class RoomUIManager : MonoBehaviour
             refreshTimer = 0f;
             RefreshUI();
         }
+    }
+
+    private void ApplyInitialUIState()
+    {
+        NetworkRunner runner = FindObjectOfType<NetworkRunner>();
+
+        bool isHost = false;
+
+        if (runner != null)
+        {
+            isHost = runner.GameMode == GameMode.Host && runner.IsServer;
+        }
+
+        if (btnMainActionText != null)
+            btnMainActionText.text = isHost ? "Start" : "Ready";
+
+        if (btnSettings != null)
+            btnSettings.gameObject.SetActive(isHost);
+
+        if (settingsPanel != null)
+            settingsPanel.SetActive(false);
+
+        if (btnMainAction != null)
+            btnMainAction.interactable = false;
     }
 
     private void RefreshUI()

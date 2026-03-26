@@ -9,6 +9,7 @@ public class LobbyUIManager : MonoBehaviour
     public Button btnReturn;
     public Button btnCreate;
     public Button btnRefresh;
+    public Button btnQuickJoin;
 
     [Header("Room List")]
     public Transform contentParent;
@@ -30,6 +31,9 @@ public class LobbyUIManager : MonoBehaviour
         if (btnRefresh != null)
             btnRefresh.onClick.AddListener(OnClickRefresh);
 
+        if (btnQuickJoin != null)
+            btnQuickJoin.onClick.AddListener(OnClickQuickJoin);
+
         if (itemTemplate != null)
             itemTemplate.SetActive(false);
     }
@@ -46,7 +50,12 @@ public class LobbyUIManager : MonoBehaviour
             LobbyRoomItemUI itemUI = item.GetComponent<LobbyRoomItemUI>();
             if (itemUI != null)
             {
-                itemUI.Setup(room.roomName, room.currentPlayers, room.maxPlayers, room.isOpen);
+                itemUI.Setup(
+                    room.roomName,
+                    room.currentPlayers,
+                    room.maxPlayers,
+                    room.isOpen
+                );
             }
 
             spawnedItems.Add(item);
@@ -82,5 +91,11 @@ public class LobbyUIManager : MonoBehaviour
     {
         if (fusionManager != null)
             fusionManager.RefreshLobby();
+    }
+
+    private void OnClickQuickJoin()
+    {
+        if (fusionManager != null)
+            fusionManager.QuickJoin();
     }
 }
