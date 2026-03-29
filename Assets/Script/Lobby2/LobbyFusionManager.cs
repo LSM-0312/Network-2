@@ -20,7 +20,6 @@ public class LobbyFusionManager : MonoBehaviour, INetworkRunnerCallbacks
     private LobbyUIManager uiManager;
 
     private bool isRefreshing = false;
-    private bool hasReceivedSessionList = false;
     private bool isCreatingRoom = false;
     private bool isLeaving = false;
     private bool isQuickJoining = false;
@@ -28,7 +27,7 @@ public class LobbyFusionManager : MonoBehaviour, INetworkRunnerCallbacks
     private void Start()
     {
         uiManager = FindObjectOfType<LobbyUIManager>();
-        RefreshLobby();
+        StartLobbyWatching();
     }
 
     private NetworkRunner CreateRunner(string runnerName)
@@ -84,13 +83,38 @@ public class LobbyFusionManager : MonoBehaviour, INetworkRunnerCallbacks
         await ShutdownRunner(runnerToShutdown);
     }
 
+    private async void StartLobbyWatching()
+    {
+        if (isRefreshing || isCreatingRoom || isLeaving || isQuickJoining)
+            return;
+
+        isRefreshing = true;
+
+        await ShutdownLobbyRunner();
+
+        lobbyRunner = CreateRunner("LobbyRunner");
+
+        Debug.Log("Lobby 자동 갱신 시작");
+
+        var result = await lobbyRunner.JoinSessionLobby(SessionLobby.ClientServer);
+
+        Debug.Log("Lobby 접속 결과 = " + result.Ok);
+
+        if (!result.Ok)
+        {
+            Debug.LogError("Lobby 접속 실패");
+            await ShutdownLobbyRunner();
+        }
+
+        isRefreshing = false;
+    }
+
     public async void RefreshLobby()
     {
         if (isRefreshing || isCreatingRoom || isLeaving || isQuickJoining)
             return;
 
         isRefreshing = true;
-        hasReceivedSessionList = false;
 
         uiManager = FindObjectOfType<LobbyUIManager>();
         if (uiManager != null)
@@ -98,20 +122,21 @@ public class LobbyFusionManager : MonoBehaviour, INetworkRunnerCallbacks
 
         await ShutdownLobbyRunner();
 
-        lobbyRunner = CreateRunner("LobbyQueryRunner");
+        lobbyRunner = CreateRunner("LobbyRunner");
 
-        Debug.Log("로비 목록 1회 조회 시작");
+        Debug.Log("수동 REFRESH: Lobby 재접속");
 
         var result = await lobbyRunner.JoinSessionLobby(SessionLobby.ClientServer);
 
-        Debug.Log("로비 목록 조회 결과 = " + result.Ok);
+        Debug.Log("수동 REFRESH 결과 = " + result.Ok);
 
         if (!result.Ok)
         {
-            Debug.LogError("로비 목록 조회 실패");
-            isRefreshing = false;
+            Debug.LogError("Lobby REFRESH 실패");
             await ShutdownLobbyRunner();
         }
+
+        isRefreshing = false;
     }
 
     public async void CreateRoom()
@@ -190,21 +215,12 @@ public class LobbyFusionManager : MonoBehaviour, INetworkRunnerCallbacks
         SceneManager.LoadScene("Lobby1");
     }
 
-    public async void OnSessionListUpdated(NetworkRunner runner, List<SessionInfo> sessionList)
+    public void OnSessionListUpdated(NetworkRunner runner, List<SessionInfo> sessionList)
     {
-        if (!isRefreshing)
-            return;
-
         if (runner != lobbyRunner)
             return;
 
-        if (hasReceivedSessionList)
-            return;
-
-        hasReceivedSessionList = true;
-        isRefreshing = false;
-
-        Debug.Log("세션 목록 1회 수신: " + sessionList.Count);
+        Debug.Log("세션 목록 업데이트 수신: " + sessionList.Count);
 
         List<RoomInfoData> roomList = new List<RoomInfoData>();
 
@@ -224,9 +240,6 @@ public class LobbyFusionManager : MonoBehaviour, INetworkRunnerCallbacks
         uiManager = FindObjectOfType<LobbyUIManager>();
         if (uiManager != null)
             uiManager.RefreshRoomList(roomList);
-
-        Debug.Log("첫 목록만 반영, 로비 연결 종료");
-        await ShutdownLobbyRunner();
     }
 
     public void OnConnectedToServer(NetworkRunner runner) { }
@@ -237,7 +250,6 @@ public class LobbyFusionManager : MonoBehaviour, INetworkRunnerCallbacks
     }
 
     public void OnConnectRequest(NetworkRunner runner, NetworkRunnerCallbackArgs.ConnectRequest request, byte[] token) { }
-
     public void OnCustomAuthenticationResponse(NetworkRunner runner, Dictionary<string, object> data) { }
 
     public void OnDisconnectedFromServer(NetworkRunner runner, NetDisconnectReason reason)
