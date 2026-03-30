@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Fusion;
 using Fusion.Sockets;
@@ -8,17 +9,19 @@ public class RoomManager : NetworkBehaviour, INetworkRunnerCallbacks
 {
     public static RoomManager Instance;
 
+    public static event Action RoomVisualChanged;
+
     [Header("Prefabs")]
     [SerializeField] private NetworkObject roomPlayerPrefab;
 
     [Header("Scene")]
     [SerializeField] private int gameSceneBuildIndex = 3;
-    [SerializeField] private string lobbySceneName = "SampleScene";
 
     [Header("Rule")]
     [SerializeField] private bool allowStartWithoutClients = false;
 
-    [Networked] public NetworkString<_32> RoomDisplayName { get; set; }
+    [Networked, OnChangedRender(nameof(OnRoomNameChanged))]
+    public NetworkString<_32> RoomDisplayName { get; set; }
 
     private readonly Dictionary<PlayerRef, NetworkObject> spawnedPlayerObjects = new Dictionary<PlayerRef, NetworkObject>();
 
@@ -27,7 +30,6 @@ public class RoomManager : NetworkBehaviour, INetworkRunnerCallbacks
 
     public override void Spawned()
     {
-        Debug.Log("RoomManager Spawned 호출됨");
         Instance = this;
         Runner.AddCallbacks(this);
 
@@ -44,6 +46,9 @@ public class RoomManager : NetworkBehaviour, INetworkRunnerCallbacks
 
             SpawnMissingPlayers();
         }
+
+        // 첫 Spawn 시 UI 초기화 알림
+        RaiseRoomVisualChanged();
     }
 
     public override void Despawned(NetworkRunner runner, bool hasState)
@@ -57,30 +62,18 @@ public class RoomManager : NetworkBehaviour, INetworkRunnerCallbacks
     private void SpawnMissingPlayers()
     {
         foreach (PlayerRef player in Runner.ActivePlayers)
-        {
             EnsurePlayerSpawned(player);
-        }
     }
 
     private void EnsurePlayerSpawned(PlayerRef player)
     {
-        Debug.Log($"EnsurePlayerSpawned 호출: {player}");
-
         if (!Runner.IsServer)
-        {
-            Debug.Log("서버가 아니라서 스폰 안 함");
             return;
-        }
 
         if (spawnedPlayerObjects.ContainsKey(player))
-        {
-            Debug.Log("이미 스폰된 플레이어");
             return;
-        }
 
         NetworkObject obj = Runner.Spawn(roomPlayerPrefab, Vector3.zero, Quaternion.identity, player);
-        Debug.Log($"RoomPlayer Spawn 결과: {obj}");
-
         RoomPlayer roomPlayer = obj.GetComponent<RoomPlayer>();
 
         bool isHostPlayer = player == Runner.LocalPlayer;
@@ -89,7 +82,7 @@ public class RoomManager : NetworkBehaviour, INetworkRunnerCallbacks
         roomPlayer.InitializeOnServer(displayName, isHostPlayer);
         spawnedPlayerObjects.Add(player, obj);
 
-        Debug.Log($"플레이어 등록 완료: {displayName}");
+        RaiseRoomVisualChanged();
     }
 
     public RoomPlayer GetLocalRoomPlayer()
@@ -116,6 +109,10 @@ public class RoomManager : NetworkBehaviour, INetworkRunnerCallbacks
             RoomPlayer player = RoomPlayer.ActivePlayers[i];
             if (player == null)
                 continue;
+
+            // 역할이 None이면 시작 불가
+            if (player.SelectedRole == PlayerRole.None)
+                return false;
 
             if (player.IsHostPlayer)
                 continue;
@@ -146,14 +143,12 @@ public class RoomManager : NetworkBehaviour, INetworkRunnerCallbacks
         Runner.LoadScene(SceneRef.FromIndex(gameSceneBuildIndex));
     }
 
-    public async void LeaveRoom()
+    public void LeaveRoom()
     {
-        if (Runner == null)
-            return;
-
-        await Runner.Shutdown();
-        RoomPlayer.ActivePlayers.Clear();
-        SceneManager.LoadScene(lobbySceneName);
+        if (GameNetworkManager.Instance != null)
+            GameNetworkManager.Instance.LeaveSessionAndReturnToLobby2();
+        else
+            Debug.LogError("GameNetworkManager.Instance가 null임");
     }
 
     public void OnPlayerJoined(NetworkRunner runner, PlayerRef player)
@@ -162,6 +157,7 @@ public class RoomManager : NetworkBehaviour, INetworkRunnerCallbacks
             return;
 
         EnsurePlayerSpawned(player);
+        RaiseRoomVisualChanged();
     }
 
     public void OnPlayerLeft(NetworkRunner runner, PlayerRef player)
@@ -176,6 +172,18 @@ public class RoomManager : NetworkBehaviour, INetworkRunnerCallbacks
 
             spawnedPlayerObjects.Remove(player);
         }
+
+        RaiseRoomVisualChanged();
+    }
+
+    private void OnRoomNameChanged()
+    {
+        RaiseRoomVisualChanged();
+    }
+
+    private void RaiseRoomVisualChanged()
+    {
+        RoomVisualChanged?.Invoke();
     }
 
     public void OnConnectedToServer(NetworkRunner runner) { }
@@ -194,5 +202,5 @@ public class RoomManager : NetworkBehaviour, INetworkRunnerCallbacks
     public void OnSceneLoadStart(NetworkRunner runner) { }
     public void OnShutdown(NetworkRunner runner, ShutdownReason shutdownReason) { }
     public void OnUserSimulationMessage(NetworkRunner runner, SimulationMessagePtr message) { }
-    public void OnSessionListUpdated(NetworkRunner runner, List<SessionInfo> sessionList){ }
+    public void OnSessionListUpdated(NetworkRunner runner, List<SessionInfo> sessionList) { }
 }

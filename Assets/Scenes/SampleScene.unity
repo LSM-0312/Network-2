@@ -271,7 +271,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 744e528e15e74634599525d4dd82d457, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerPrefab:
+  copPrefab:
+    RawGuidValue: 87233fbb03680924f9dae34fff83b008
+  robberPrefab:
     RawGuidValue: 87233fbb03680924f9dae34fff83b008
 --- !u!4 &929335790
 Transform:

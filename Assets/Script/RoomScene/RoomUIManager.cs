@@ -1,135 +1,107 @@
 using System.Collections.Generic;
 using TMPro;
-using Fusion;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class RoomUIManager : MonoBehaviour
 {
     [Header("Top")]
-    [SerializeField] private TextMeshProUGUI roomNameText;
-    [SerializeField] private Button btnSettings;
-    [SerializeField] private GameObject settingsPanel;
+    [SerializeField] private TMP_Text txtRoomTitle;
 
-    [Header("Left Buttons")]
-    [SerializeField] private Button btnMainAction;
-    [SerializeField] private TextMeshProUGUI btnMainActionText;
+    [Header("Buttons")]
+    [SerializeField] private Button btnAction;
     [SerializeField] private Button btnReturn;
 
     [Header("Player List")]
     [SerializeField] private Transform contentParent;
     [SerializeField] private GameObject itemTemplate;
 
-    private readonly List<GameObject> spawnedItems = new List<GameObject>();
-    private float refreshTimer;
-    private const float RefreshInterval = 0.2f;
+    private readonly List<RoomPlayerItemUI> spawnedItems = new List<RoomPlayerItemUI>();
 
     private void Awake()
     {
-        if (btnMainAction != null)
-            btnMainAction.onClick.AddListener(OnClickMainAction);
-
-        if (btnReturn != null)
-            btnReturn.onClick.AddListener(OnClickReturn);
-
-        if (btnSettings != null)
-            btnSettings.onClick.AddListener(OnClickSettings);
-
         if (itemTemplate != null)
             itemTemplate.SetActive(false);
 
-        ApplyInitialUIState();
+        if (btnAction != null)
+            btnAction.onClick.AddListener(OnClickAction);
+
+        if (btnReturn != null)
+            btnReturn.onClick.AddListener(OnClickReturn);
     }
 
-    private void Start()
+    private void OnEnable()
     {
-        RefreshUI();
+        RoomPlayer.ActivePlayersChanged += HandlePlayersChanged;
+        RoomPlayer.AnyPlayerVisualChanged += HandleAnyPlayerVisualChanged;
+        RoomManager.RoomVisualChanged += HandleRoomVisualChanged;
+
+        RefreshAll();
     }
 
-    private void Update()
+    private void OnDisable()
     {
-        refreshTimer += Time.deltaTime;
-
-        if (refreshTimer >= RefreshInterval)
-        {
-            refreshTimer = 0f;
-            RefreshUI();
-        }
+        RoomPlayer.ActivePlayersChanged -= HandlePlayersChanged;
+        RoomPlayer.AnyPlayerVisualChanged -= HandleAnyPlayerVisualChanged;
+        RoomManager.RoomVisualChanged -= HandleRoomVisualChanged;
     }
 
-    private void ApplyInitialUIState()
+    private void HandlePlayersChanged()
     {
-        NetworkRunner runner = FindObjectOfType<NetworkRunner>();
-
-        bool isHost = false;
-
-        if (runner != null)
-        {
-            isHost = runner.GameMode == GameMode.Host && runner.IsServer;
-        }
-
-        if (btnMainActionText != null)
-            btnMainActionText.text = isHost ? "Start" : "Ready";
-
-        if (btnSettings != null)
-            btnSettings.gameObject.SetActive(isHost);
-
-        if (settingsPanel != null)
-            settingsPanel.SetActive(false);
-
-        if (btnMainAction != null)
-            btnMainAction.interactable = false;
+        RebuildPlayerList();
+        RefreshActionButton();
     }
 
-    private void RefreshUI()
+    private void HandleAnyPlayerVisualChanged(RoomPlayer _)
     {
-        RoomManager roomManager = RoomManager.Instance;
-        if (roomManager == null)
+        RefreshActionButton();
+    }
+
+    private void HandleRoomVisualChanged()
+    {
+        RefreshRoomTitle();
+        RefreshActionButton();
+    }
+
+    private void RefreshAll()
+    {
+        RefreshRoomTitle();
+        RebuildPlayerList();
+        RefreshActionButton();
+    }
+
+    private void RefreshRoomTitle()
+    {
+        if (txtRoomTitle == null)
             return;
 
-        bool isHost = roomManager.IsLocalHost;
-        RoomPlayer localPlayer = roomManager.GetLocalRoomPlayer();
-
-        if (roomNameText != null)
-            roomNameText.text = roomManager.RoomName;
-
-        if (btnSettings != null)
-            btnSettings.gameObject.SetActive(isHost);
-
-        if (settingsPanel != null && !isHost)
-            settingsPanel.SetActive(false);
-
-        if (btnMainActionText != null)
-        {
-            if (isHost)
-            {
-                btnMainActionText.text = "Start";
-            }
-            else
-            {
-                bool isReady = localPlayer != null && localPlayer.IsReady;
-                btnMainActionText.text = isReady ? "Cancel Ready" : "Ready";
-            }
-        }
-
-        if (btnMainAction != null)
-        {
-            if (isHost)
-                btnMainAction.interactable = roomManager.CanStartMatch();
-            else
-                btnMainAction.interactable = localPlayer != null;
-        }
-
-        RefreshPlayerList();
+        if (RoomManager.Instance != null && !string.IsNullOrEmpty(RoomManager.Instance.RoomName))
+            txtRoomTitle.text = RoomManager.Instance.RoomName;
+        else
+            txtRoomTitle.text = "ROOM";
     }
 
-    private void RefreshPlayerList()
+    private void RebuildPlayerList()
     {
         ClearPlayerList();
 
-        for (int i = 0; i < RoomPlayer.ActivePlayers.Count; i++)
+        List<RoomPlayer> players = new List<RoomPlayer>(RoomPlayer.ActivePlayers);
+
+        players.Sort((a, b) =>
         {
-            RoomPlayer player = RoomPlayer.ActivePlayers[i];
+            if (a == null && b == null) return 0;
+            if (a == null) return 1;
+            if (b == null) return -1;
+
+            if (a.IsHostPlayer && !b.IsHostPlayer) return -1;
+            if (!a.IsHostPlayer && b.IsHostPlayer) return 1;
+
+            return string.Compare(a.DisplayName.ToString(), b.DisplayName.ToString(), System.StringComparison.Ordinal);
+        });
+
+        for (int i = 0; i < players.Count; i++)
+        {
+            RoomPlayer player = players[i];
             if (player == null)
                 continue;
 
@@ -139,16 +111,14 @@ public class RoomUIManager : MonoBehaviour
             RoomPlayerItemUI itemUI = item.GetComponent<RoomPlayerItemUI>();
             if (itemUI != null)
             {
-                itemUI.Setup(
-                    player.DisplayName.ToString(),
-                    player.IsReady,
-                    player.IsHostPlayer,
-                    player.IsLocalPlayer
-                );
+                itemUI.Setup(player);
+                spawnedItems.Add(itemUI);
             }
-
-            spawnedItems.Add(item);
         }
+
+        RectTransform rect = contentParent as RectTransform;
+        if (rect != null)
+            LayoutRebuilder.ForceRebuildLayoutImmediate(rect);
     }
 
     private void ClearPlayerList()
@@ -156,44 +126,64 @@ public class RoomUIManager : MonoBehaviour
         for (int i = 0; i < spawnedItems.Count; i++)
         {
             if (spawnedItems[i] != null)
-                Destroy(spawnedItems[i]);
+                Destroy(spawnedItems[i].gameObject);
         }
 
         spawnedItems.Clear();
     }
 
-    private void OnClickMainAction()
+    private void RefreshActionButton()
     {
-        RoomManager roomManager = RoomManager.Instance;
-        if (roomManager == null)
+        if (btnAction == null)
             return;
 
-        if (roomManager.IsLocalHost)
+        bool isHostLocal = RoomManager.Instance != null && RoomManager.Instance.IsLocalHost;
+        RoomPlayer localPlayer = RoomManager.Instance != null
+            ? RoomManager.Instance.GetLocalRoomPlayer()
+            : null;
+
+        TMP_Text actionText = btnAction.GetComponentInChildren<TMP_Text>(true);
+
+        btnAction.gameObject.SetActive(true);
+
+        if (isHostLocal)
         {
-            roomManager.StartMatch();
+            if (actionText != null)
+                actionText.text = "Start";
+
+            btnAction.interactable = RoomManager.Instance != null && RoomManager.Instance.CanStartMatch();
+            return;
         }
-        else
+
+        if (actionText != null)
+            actionText.text = localPlayer != null && localPlayer.IsReady ? "Cancel" : "Ready";
+
+        btnAction.interactable = localPlayer != null;
+    }
+
+    private void OnClickAction()
+    {
+        bool isHostLocal = RoomManager.Instance != null && RoomManager.Instance.IsLocalHost;
+
+        if (isHostLocal)
         {
-            RoomPlayer localPlayer = roomManager.GetLocalRoomPlayer();
-            if (localPlayer != null)
-                localPlayer.ToggleReady();
+            if (RoomManager.Instance != null)
+                RoomManager.Instance.StartMatch();
+
+            return;
         }
+
+        RoomPlayer localPlayer = RoomManager.Instance != null
+            ? RoomManager.Instance.GetLocalRoomPlayer()
+            : null;
+
+        if (localPlayer != null)
+            localPlayer.ToggleReady();
     }
 
     private void OnClickReturn()
     {
-        RoomManager roomManager = RoomManager.Instance;
-        if (roomManager != null)
-            roomManager.LeaveRoom();
-    }
-
-    private void OnClickSettings()
-    {
-        RoomManager roomManager = RoomManager.Instance;
-        if (roomManager == null || !roomManager.IsLocalHost)
-            return;
-
-        if (settingsPanel != null)
-            settingsPanel.SetActive(!settingsPanel.activeSelf);
+        if (RoomManager.Instance != null)
+            RoomManager.Instance.LeaveRoom();
     }
 }

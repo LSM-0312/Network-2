@@ -16,11 +16,11 @@ public class LobbyUIManager : MonoBehaviour
     public GameObject itemTemplate;
 
     private readonly List<GameObject> spawnedItems = new List<GameObject>();
-    private LobbyFusionManager fusionManager;
+    private GameNetworkManager fusionManager;
 
     private void Awake()
     {
-        fusionManager = FindObjectOfType<LobbyFusionManager>();
+        fusionManager = FindObjectOfType<GameNetworkManager>();
 
         if (btnReturn != null)
             btnReturn.onClick.AddListener(OnClickReturn);

@@ -636,7 +636,7 @@ GameObject:
   - component: {fileID: 756848736}
   - component: {fileID: 756848735}
   m_Layer: 0
-  m_Name: LobbyNetworkManager
+  m_Name: GameNetworkManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -655,6 +655,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   roomSceneBuildIndex: 2
+  lobby1SceneName: Lobby1
+  lobby2SceneName: Lobby2
   roomNamePrefix: Room_
   maxPlayers: 4
 --- !u!4 &756848736
