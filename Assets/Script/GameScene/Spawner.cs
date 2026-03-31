@@ -1,16 +1,23 @@
-using Fusion;
-using Fusion.Sockets;
 using System;
 using System.Collections.Generic;
+using Fusion;
+using Fusion.Sockets;
 using UnityEngine;
 
 public class PlayerSpawner : MonoBehaviour, INetworkRunnerCallbacks
 {
-    [SerializeField] private NetworkPrefabRef copPrefab;
-    [SerializeField] private NetworkPrefabRef robberPrefab;
+    [SerializeField] private NetworkPrefabRef playerPrefab;
+
+    [Header("Team Spawn Points")]
+    [SerializeField] private Transform[] copSpawnPoints;
+    [SerializeField] private Transform[] robberSpawnPoints;
 
     private NetworkRunner runner;
     private readonly Dictionary<PlayerRef, NetworkObject> spawnedPlayers = new();
+    private readonly HashSet<PlayerRef> pendingPlayers = new();
+
+    private bool pendingSpawnCheck;
+    private float nextRoleMissingLogTime;
 
     private void Start()
     {
@@ -29,6 +36,26 @@ public class PlayerSpawner : MonoBehaviour, INetworkRunnerCallbacks
         }
 
         runner.AddCallbacks(this);
+
+        if (runner.IsServer)
+            BeginSpawnCheck();
+    }
+
+    private void Update()
+    {
+        if (runner == null || !runner.IsServer)
+            return;
+
+        if (!pendingSpawnCheck)
+            return;
+
+        TrySpawnAllPlayers();
+
+        if (AreAllPlayersHandled())
+        {
+            pendingSpawnCheck = false;
+            Debug.Log("[PlayerSpawner] 모든 플레이어 처리 완료");
+        }
     }
 
     private void OnDestroy()
@@ -37,13 +64,176 @@ public class PlayerSpawner : MonoBehaviour, INetworkRunnerCallbacks
             runner.RemoveCallbacks(this);
     }
 
+    private void BeginSpawnCheck()
+    {
+        pendingSpawnCheck = true;
+        TrySpawnAllPlayers();
+    }
+
+    private void TrySpawnAllPlayers()
+    {
+        foreach (PlayerRef player in runner.ActivePlayers)
+            EnsurePlayerSpawned(player);
+    }
+
+    private bool AreAllPlayersHandled()
+    {
+        foreach (PlayerRef player in runner.ActivePlayers)
+        {
+            if (!spawnedPlayers.ContainsKey(player) && !pendingPlayers.Contains(player))
+                return false;
+        }
+
+        return true;
+    }
+
+    private bool EnsurePlayerSpawned(PlayerRef player)
+    {
+        if (!runner.IsServer)
+            return false;
+
+        if (spawnedPlayers.ContainsKey(player))
+            return true;
+
+        if (pendingPlayers.Contains(player))
+            return false;
+
+        if (GameNetworkManager.Instance == null)
+            return false;
+
+        if (!GameNetworkManager.Instance.TryGetCachedRole(player, out PlayerRole role))
+        {
+            if (Time.time >= nextRoleMissingLogTime)
+            {
+                Debug.LogWarning($"[PlayerSpawner] 역할 캐시 없음: {player}");
+                nextRoleMissingLogTime = Time.time + 1f;
+            }
+
+            return false;
+        }
+
+        Vector3 spawnPos = GetSpawnPosition(player, role);
+        pendingPlayers.Add(player);
+
+        runner.SpawnAsync(
+            playerPrefab,
+            spawnPos,
+            Quaternion.identity,
+            player,
+            (spawnRunner, obj) =>
+            {
+                PlayerAvatar avatar = obj.GetComponent<PlayerAvatar>();
+                if (avatar != null)
+                    avatar.SetInitialRole(role);
+            },
+            default,
+            result => OnSpawnCompleted(player, role, result)
+        );
+
+        Debug.Log($"[PlayerSpawner] SpawnAsync 요청: player={player}, role={role}, pos={spawnPos}");
+        return false;
+    }
+
+    private void OnSpawnCompleted(PlayerRef player, PlayerRole role, NetworkSpawnOp result)
+    {
+        pendingPlayers.Remove(player);
+
+        if (runner == null)
+            return;
+
+        if (!result.IsSpawned || result.Object == null)
+        {
+            Debug.LogError($"[PlayerSpawner] 스폰 실패: player={player}, role={role}, status={result.Status}");
+            pendingSpawnCheck = true;
+            return;
+        }
+
+        if (!IsPlayerStillActive(player))
+        {
+            runner.Despawn(result.Object);
+            return;
+        }
+
+        if (spawnedPlayers.ContainsKey(player))
+        {
+            runner.Despawn(result.Object);
+            return;
+        }
+
+        spawnedPlayers.Add(player, result.Object);
+        runner.SetPlayerObject(player, result.Object);
+
+        Debug.Log($"[PlayerSpawner] 스폰 완료: player={player}, role={role}, obj={result.Object.name}");
+    }
+
+    private bool IsPlayerStillActive(PlayerRef targetPlayer)
+    {
+        foreach (PlayerRef player in runner.ActivePlayers)
+        {
+            if (player == targetPlayer)
+                return true;
+        }
+
+        return false;
+    }
+
+    private Vector3 GetSpawnPosition(PlayerRef targetPlayer, PlayerRole targetRole)
+    {
+        Transform[] spawnPoints = targetRole == PlayerRole.Cop ? copSpawnPoints : robberSpawnPoints;
+
+        if (spawnPoints == null || spawnPoints.Length == 0)
+        {
+            Debug.LogError($"스폰 포인트가 비어있음. role={targetRole}");
+            return Vector3.zero;
+        }
+
+        int order = GetTeamOrder(targetPlayer, targetRole);
+
+        if (order >= spawnPoints.Length)
+        {
+            Debug.LogWarning($"스폰 포인트 수 부족. role={targetRole}, order={order}");
+            order %= spawnPoints.Length;
+        }
+
+        return spawnPoints[order].position;
+    }
+
+    private int GetTeamOrder(PlayerRef targetPlayer, PlayerRole targetRole)
+    {
+        List<PlayerRef> sameTeamPlayers = new();
+
+        foreach (PlayerRef player in runner.ActivePlayers)
+        {
+            if (GameNetworkManager.Instance != null &&
+                GameNetworkManager.Instance.TryGetCachedRole(player, out PlayerRole role) &&
+                role == targetRole)
+            {
+                sameTeamPlayers.Add(player);
+            }
+        }
+
+        sameTeamPlayers.Sort((a, b) => a.RawEncoded.CompareTo(b.RawEncoded));
+
+        for (int i = 0; i < sameTeamPlayers.Count; i++)
+        {
+            if (sameTeamPlayers[i] == targetPlayer)
+                return i;
+        }
+
+        return 0;
+    }
+
+    public bool TryGetSpawnedAvatar(PlayerRef player, out NetworkObject avatarObject)
+    {
+        return spawnedPlayers.TryGetValue(player, out avatarObject);
+    }
+
     public void OnSceneLoadDone(NetworkRunner runner)
     {
         if (!runner.IsServer)
             return;
 
-        foreach (PlayerRef player in runner.ActivePlayers)
-            EnsurePlayerSpawned(player);
+        BeginSpawnCheck();
     }
 
     public void OnPlayerJoined(NetworkRunner runner, PlayerRef player)
@@ -51,7 +241,7 @@ public class PlayerSpawner : MonoBehaviour, INetworkRunnerCallbacks
         if (!runner.IsServer)
             return;
 
-        EnsurePlayerSpawned(player);
+        BeginSpawnCheck();
     }
 
     public void OnPlayerLeft(NetworkRunner runner, PlayerRef player)
@@ -59,48 +249,15 @@ public class PlayerSpawner : MonoBehaviour, INetworkRunnerCallbacks
         if (!runner.IsServer)
             return;
 
-        if (spawnedPlayers.TryGetValue(player, out var obj))
+        pendingPlayers.Remove(player);
+
+        if (spawnedPlayers.TryGetValue(player, out NetworkObject obj))
         {
             if (obj != null)
                 runner.Despawn(obj);
 
             spawnedPlayers.Remove(player);
         }
-    }
-
-    private void EnsurePlayerSpawned(PlayerRef player)
-    {
-        if (spawnedPlayers.ContainsKey(player))
-            return;
-
-        PlayerRole role = GetSelectedRole(player);
-        NetworkPrefabRef prefabToSpawn = role == PlayerRole.Cop ? copPrefab : robberPrefab;
-        Vector3 spawnPos = GetSpawnPosition(role);
-
-        NetworkObject obj = runner.Spawn(prefabToSpawn, spawnPos, Quaternion.identity, player);
-        runner.SetPlayerObject(player, obj);
-
-        spawnedPlayers.Add(player, obj);
-    }
-
-    private PlayerRole GetSelectedRole(PlayerRef player)
-    {
-        RoomPlayer[] roomPlayers = FindObjectsOfType<RoomPlayer>(true);
-
-        foreach (var roomPlayer in roomPlayers)
-        {
-            if (roomPlayer != null && roomPlayer.Object != null && roomPlayer.Object.InputAuthority == player)
-                return roomPlayer.SelectedRole;
-        }
-
-        return PlayerRole.Robber;
-    }
-
-    private Vector3 GetSpawnPosition(PlayerRole role)
-    {
-        return role == PlayerRole.Cop
-            ? new Vector3(-2f, 1f, 0f)
-            : new Vector3(2f, 1f, 0f);
     }
 
     public void OnConnectedToServer(NetworkRunner runner) { }

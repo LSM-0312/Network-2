@@ -12,20 +12,38 @@ public class PlayerAvatar : NetworkBehaviour
     [Header("Catch")]
     [SerializeField] private float catchInvulnerableDuration = 3f;
 
-    [Networked] public PlayerRole Role { get; set; }
+    [Networked, OnChangedRender(nameof(OnRoleChanged))]
+    public PlayerRole Role { get; set; }
+
     [Networked] private TickTimer CatchInvulnTimer { get; set; }
 
-    private PlayerRole _lastAppliedRole = (PlayerRole)(-1);
+    private PlayerRole initialRole = PlayerRole.None;
+    private MaterialPropertyBlock mpb;
+
+    private void Awake()
+    {
+        if (targetRenderers == null || targetRenderers.Length == 0)
+            targetRenderers = GetComponentsInChildren<Renderer>(true);
+
+        mpb = new MaterialPropertyBlock();
+    }
+
+    public void SetInitialRole(PlayerRole role)
+    {
+        initialRole = role;
+    }
 
     public override void Spawned()
     {
+        if (Object.HasStateAuthority)
+            Role = initialRole;
+
         ApplyRoleVisual();
     }
 
-    public override void Render()
+    private void OnRoleChanged()
     {
-        if (_lastAppliedRole != Role)
-            ApplyRoleVisual();
+        ApplyRoleVisual();
     }
 
     public bool IsCatchInvulnerable()
@@ -66,14 +84,13 @@ public class PlayerAvatar : NetworkBehaviour
 
         for (int i = 0; i < targetRenderers.Length; i++)
         {
-            if (targetRenderers[i] == null) continue;
+            if (targetRenderers[i] == null)
+                continue;
 
-            MaterialPropertyBlock mpb = new MaterialPropertyBlock();
             targetRenderers[i].GetPropertyBlock(mpb);
             mpb.SetColor("_BaseColor", color);
+            mpb.SetColor("_Color", color);
             targetRenderers[i].SetPropertyBlock(mpb);
         }
-
-        _lastAppliedRole = Role;
     }
 }

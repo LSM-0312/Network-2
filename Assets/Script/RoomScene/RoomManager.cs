@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using Fusion;
 using Fusion.Sockets;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 public class RoomManager : NetworkBehaviour, INetworkRunnerCallbacks
 {
@@ -23,7 +22,7 @@ public class RoomManager : NetworkBehaviour, INetworkRunnerCallbacks
     [Networked, OnChangedRender(nameof(OnRoomNameChanged))]
     public NetworkString<_32> RoomDisplayName { get; set; }
 
-    private readonly Dictionary<PlayerRef, NetworkObject> spawnedPlayerObjects = new Dictionary<PlayerRef, NetworkObject>();
+    private readonly Dictionary<PlayerRef, NetworkObject> spawnedPlayerObjects = new();
 
     public bool IsLocalHost => Runner != null && Runner.IsServer;
     public string RoomName => RoomDisplayName.ToString();
@@ -47,7 +46,6 @@ public class RoomManager : NetworkBehaviour, INetworkRunnerCallbacks
             SpawnMissingPlayers();
         }
 
-        // 첫 Spawn 시 UI 초기화 알림
         RaiseRoomVisualChanged();
     }
 
@@ -80,6 +78,8 @@ public class RoomManager : NetworkBehaviour, INetworkRunnerCallbacks
         string displayName = isHostPlayer ? "Host" : $"Player {spawnedPlayerObjects.Count + 1}";
 
         roomPlayer.InitializeOnServer(displayName, isHostPlayer);
+
+        Runner.SetPlayerObject(player, obj);
         spawnedPlayerObjects.Add(player, obj);
 
         RaiseRoomVisualChanged();
@@ -87,14 +87,16 @@ public class RoomManager : NetworkBehaviour, INetworkRunnerCallbacks
 
     public RoomPlayer GetLocalRoomPlayer()
     {
-        for (int i = 0; i < RoomPlayer.ActivePlayers.Count; i++)
-        {
-            RoomPlayer player = RoomPlayer.ActivePlayers[i];
-            if (player != null && player.IsLocalPlayer)
-                return player;
-        }
+        if (Runner == null)
+            return null;
 
-        return null;
+        if (!Runner.TryGetPlayerObject(Runner.LocalPlayer, out NetworkObject obj))
+            return null;
+
+        if (obj == null)
+            return null;
+
+        return obj.GetComponent<RoomPlayer>();
     }
 
     public bool CanStartMatch()
@@ -103,6 +105,8 @@ public class RoomManager : NetworkBehaviour, INetworkRunnerCallbacks
             return false;
 
         int clientCount = 0;
+        int copCount = 0;
+        int robberCount = 0;
 
         for (int i = 0; i < RoomPlayer.ActivePlayers.Count; i++)
         {
@@ -110,8 +114,11 @@ public class RoomManager : NetworkBehaviour, INetworkRunnerCallbacks
             if (player == null)
                 continue;
 
-            // 역할이 None이면 시작 불가
-            if (player.SelectedRole == PlayerRole.None)
+            if (player.SelectedRole == PlayerRole.Cop)
+                copCount++;
+            else if (player.SelectedRole == PlayerRole.Robber)
+                robberCount++;
+            else
                 return false;
 
             if (player.IsHostPlayer)
@@ -126,7 +133,34 @@ public class RoomManager : NetworkBehaviour, INetworkRunnerCallbacks
         if (!allowStartWithoutClients && clientCount == 0)
             return false;
 
+        if (copCount == 0 || robberCount == 0)
+            return false;
+
         return true;
+    }
+
+    private void CacheRoomSelectionsForGameScene()
+    {
+        if (GameNetworkManager.Instance == null)
+        {
+            Debug.LogError("GameNetworkManager.Instance가 없음");
+            return;
+        }
+
+        GameNetworkManager.Instance.ClearCachedRoles();
+
+        for (int i = 0; i < RoomPlayer.ActivePlayers.Count; i++)
+        {
+            RoomPlayer roomPlayer = RoomPlayer.ActivePlayers[i];
+
+            if (roomPlayer == null || roomPlayer.Object == null)
+                continue;
+
+            PlayerRef player = roomPlayer.Object.InputAuthority;
+            GameNetworkManager.Instance.CacheSelectedRole(player, roomPlayer.SelectedRole);
+
+            Debug.Log($"[RoomManager] 역할 캐시 저장: player={player}, role={roomPlayer.SelectedRole}");
+        }
     }
 
     public void StartMatch()
@@ -140,6 +174,7 @@ public class RoomManager : NetworkBehaviour, INetworkRunnerCallbacks
         if (!CanStartMatch())
             return;
 
+        CacheRoomSelectionsForGameScene();
         Runner.LoadScene(SceneRef.FromIndex(gameSceneBuildIndex));
     }
 
@@ -172,6 +207,9 @@ public class RoomManager : NetworkBehaviour, INetworkRunnerCallbacks
 
             spawnedPlayerObjects.Remove(player);
         }
+
+        if (GameNetworkManager.Instance != null)
+            GameNetworkManager.Instance.RemoveCachedRole(player);
 
         RaiseRoomVisualChanged();
     }

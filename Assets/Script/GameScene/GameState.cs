@@ -18,20 +18,16 @@ public class GameState : NetworkBehaviour
     [Networked, Capacity(MAX_PLAYERS)] private NetworkArray<int> _scores => default;
 
     [Networked, Capacity(MAX_PLAYERS)] private NetworkDictionary<PlayerRef, byte> _playerToSlot => default;
+    [Networked, Capacity(MAX_PLAYERS)] private NetworkDictionary<PlayerRef, byte> _playerToRole => default;
 
-    // 점수 연출 트리거
     [Networked] private int ScoreSeq { get; set; }
     [Networked] private byte LastScoreSlot { get; set; }
 
-    // 라운드 종료 상태/승리자
     [Networked] public NetworkBool IsRoundOver { get; private set; }
     [Networked] public byte WinnerSlot { get; private set; }
     [Networked] private PlayerRef WinnerPlayer { get; set; }
 
-    // 5초 후 로비 복귀 타이머
     [Networked] private TickTimer _endTimer { get; set; }
-
-    // 로비 리셋 감지용 시퀀스(클라 로컬 ready UI 내리기)
     [Networked] public int LobbyResetSeq { get; private set; }
 
     [Header("Score FX (Local)")]
@@ -55,7 +51,6 @@ public class GameState : NetworkBehaviour
             WinnerPlayer = PlayerRef.None;
 
             _endTimer = TickTimer.None;
-
             LobbyResetSeq = 0;
         }
     }
@@ -65,9 +60,7 @@ public class GameState : NetworkBehaviour
         if (!Object.HasStateAuthority) return;
 
         if (IsRoundOver && _endTimer.Expired(Runner))
-        {
             Server_ResetToLobbyState();
-        }
     }
 
     public override void Render()
@@ -96,6 +89,7 @@ public class GameState : NetworkBehaviour
                 return true;
             }
         }
+
         slot = 255;
         return false;
     }
@@ -123,16 +117,46 @@ public class GameState : NetworkBehaviour
             _playerToSlot.Remove(player);
             UnregisterSlot(slot);
         }
+
+        if (_playerToRole.ContainsKey(player))
+            _playerToRole.Remove(player);
     }
 
     public bool TryGetSlot(PlayerRef player, out byte slot)
     {
         slot = 255;
+
         if (_playerToSlot.ContainsKey(player))
         {
             slot = _playerToSlot.Get(player);
             return true;
         }
+
+        return false;
+    }
+
+    public void ServerSetRole(PlayerRef player, PlayerRole role)
+    {
+        if (!Object.HasStateAuthority) return;
+
+        byte value = (byte)role;
+
+        if (_playerToRole.ContainsKey(player))
+            _playerToRole.Set(player, value);
+        else
+            _playerToRole.Add(player, value);
+    }
+
+    public bool TryGetRole(PlayerRef player, out PlayerRole role)
+    {
+        role = PlayerRole.Robber;
+
+        if (_playerToRole.ContainsKey(player))
+        {
+            role = (PlayerRole)_playerToRole.Get(player);
+            return true;
+        }
+
         return false;
     }
 
@@ -158,7 +182,6 @@ public class GameState : NetworkBehaviour
     public void ServerSetReady(byte slot, bool ready)
     {
         if (!Object.HasStateAuthority) return;
-
         if (IsGameStarted || IsRoundOver) return;
         if (slot >= MaxSlots) return;
         if (_connected.Get(slot) == false) return;
@@ -173,15 +196,18 @@ public class GameState : NetworkBehaviour
         if (IsGameStarted || IsRoundOver) return;
 
         bool any = false;
+
         for (int i = 0; i < MaxSlots; i++)
         {
             if (_connected.Get(i))
             {
                 any = true;
+
                 if (_ready.Get(i) == false)
                     return;
             }
         }
+
         if (!any) return;
 
         for (int i = 0; i < MaxSlots; i++)
@@ -209,7 +235,7 @@ public class GameState : NetworkBehaviour
             return;
 
         if (slot >= MaxSlots) return;
-        if (!_connected.Get(slot)) return;
+        if (_connected.Get(slot) == false) return;
 
         int next = _scores.Get(slot) + 1;
         _scores.Set(slot, next);
@@ -218,15 +244,12 @@ public class GameState : NetworkBehaviour
         ScoreSeq++;
 
         if (next >= _winScore)
-        {
             Server_EndRound(slot, toucher);
-        }
     }
 
     public void ServerEndGame()
     {
         if (!Object.HasStateAuthority) return;
-
         if (!IsGameStarted && !IsRoundOver) return;
 
         IsGameStarted = false;
@@ -273,7 +296,7 @@ public class GameState : NetworkBehaviour
             }
         }
 
-        LobbyResetSeq++;   //  추가: 클라 로컬 ready UI 내리기 트리거
+        LobbyResetSeq++;
         RPC_OnLobbyReset();
     }
 

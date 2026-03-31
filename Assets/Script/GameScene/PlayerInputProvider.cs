@@ -1,29 +1,82 @@
 using Fusion;
 using Fusion.Sockets;
 using UnityEngine;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
 
-public class InputProvider : MonoBehaviour, INetworkRunnerCallbacks
+public class InputProvider : NetworkBehaviour, INetworkRunnerCallbacks
 {
-    private bool _mouseButton0;
-    private bool _mouseButton1;
+    private bool jumpPressed;
+    private bool mouse0Pressed;
+    private bool mouse1Pressed;
+
+    public override void Spawned()
+    {
+        if (Object.HasInputAuthority)
+            Runner.AddCallbacks(this);
+    }
+
+    public override void Despawned(NetworkRunner runner, bool hasState)
+    {
+        runner.RemoveCallbacks(this);
+    }
 
     private void Update()
     {
-        _mouseButton0 |= Input.GetMouseButton(0);
-        _mouseButton1 |= Input.GetMouseButton(1);
+        if (Object == null || !Object.HasInputAuthority)
+            return;
+
+#if ENABLE_INPUT_SYSTEM
+        if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
+            jumpPressed = true;
+
+        if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
+            mouse0Pressed = true;
+
+        if (Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame)
+            mouse1Pressed = true;
+#else
+        if (Input.GetKeyDown(KeyCode.Space))
+            jumpPressed = true;
+
+        if (Input.GetMouseButtonDown(0))
+            mouse0Pressed = true;
+
+        if (Input.GetMouseButtonDown(1))
+            mouse1Pressed = true;
+#endif
     }
 
     public void OnInput(NetworkRunner runner, NetworkInput input)
     {
-        var data = new NetworkInputData();
+        if (Object == null || !Object.HasInputAuthority)
+            return;
+
+        NetworkInputData data = default;
 
         float x = 0f;
         float z = 0f;
+        bool sprint = false;
 
+#if ENABLE_INPUT_SYSTEM
+        if (Keyboard.current != null)
+        {
+            if (Keyboard.current.wKey.isPressed) z += 1f;
+            if (Keyboard.current.sKey.isPressed) z -= 1f;
+            if (Keyboard.current.dKey.isPressed) x += 1f;
+            if (Keyboard.current.aKey.isPressed) x -= 1f;
+
+            sprint = Keyboard.current.leftShiftKey.isPressed;
+        }
+#else
         if (Input.GetKey(KeyCode.W)) z += 1f;
         if (Input.GetKey(KeyCode.S)) z -= 1f;
         if (Input.GetKey(KeyCode.D)) x += 1f;
         if (Input.GetKey(KeyCode.A)) x -= 1f;
+
+        sprint = Input.GetKey(KeyCode.LeftShift);
+#endif
 
         Transform cam = Camera.main != null ? Camera.main.transform : null;
         Vector3 camF = cam != null ? cam.forward : Vector3.forward;
@@ -40,19 +93,16 @@ public class InputProvider : MonoBehaviour, INetworkRunnerCallbacks
         float mag = Mathf.Clamp01(moveWorld.magnitude);
         data.direction = mag > 0.0001f ? moveWorld.normalized * mag : Vector3.zero;
 
-        if (Input.GetKey(KeyCode.Space))
-            data.jump.Set(0, true);
-
-        if (Input.GetKey(KeyCode.LeftShift))
-            data.sprint.Set(0, true);
-
-        data.buttons.Set(NetworkInputData.MOUSEBUTTON0, _mouseButton0);
-        data.buttons.Set(NetworkInputData.MOUSEBUTTON1, _mouseButton1);
-
-        _mouseButton0 = false;
-        _mouseButton1 = false;
+        data.buttons.Set((int)InputButton.Sprint, sprint);
+        data.buttons.Set((int)InputButton.Jump, jumpPressed);
+        data.buttons.Set((int)InputButton.Mouse0, mouse0Pressed);
+        data.buttons.Set((int)InputButton.Mouse1, mouse1Pressed);
 
         input.Set(data);
+
+        jumpPressed = false;
+        mouse0Pressed = false;
+        mouse1Pressed = false;
     }
 
     public void OnInputMissing(NetworkRunner runner, PlayerRef player, NetworkInput input) { }

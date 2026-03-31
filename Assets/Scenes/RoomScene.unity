@@ -571,9 +571,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   txtPlayerName: {fileID: 1162482835}
-  txtRole: {fileID: 1004170076}
   txtStatus: {fileID: 1108706916}
   btnRole: {fileID: 1814304582}
+  txtRole: {fileID: 1004170076}
 --- !u!1 &65208451
 GameObject:
   m_ObjectHideFlags: 0
@@ -5645,8 +5645,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   roomPlayerPrefab: {fileID: 7012684932865816806, guid: aa07dfa6fa6854047b9d7918ae67e8f6, type: 3}
+  matchRosterPrefab: {fileID: 3166840313885558743, guid: d82d822901719174095a4da492a54e81, type: 3}
   gameSceneBuildIndex: 3
-  lobbySceneName: SampleScene
   allowStartWithoutClients: 0
   _RoomDisplayName:
     _length: 0

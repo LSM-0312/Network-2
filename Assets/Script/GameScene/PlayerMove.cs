@@ -20,24 +20,25 @@ public class PlayerMove : NetworkBehaviour
     [SerializeField] private float groundedAnimDistance = 0.18f;
     [SerializeField] private float groundedVelClamp = 0.5f;
 
-    [Networked] private float _animSpeed { get; set; }
-    [Networked] private NetworkBool _netGrounded { get; set; }
-    [Networked] private float _netVerticalVel { get; set; }
+    [Networked] private float animSpeed { get; set; }
+    [Networked] private NetworkBool netGrounded { get; set; }
+    [Networked] private float netVerticalVel { get; set; }
+    [Networked] private NetworkButtons previousButtons { get; set; }
 
-    private Rigidbody _rb;
-    private Animator _animator;
+    private Rigidbody rb;
+    private Animator animator;
 
-    private Vector3 _lastStableLookDir = Vector3.forward;
+    private Vector3 lastStableLookDir = Vector3.forward;
 
-    private float _localAnimSpeed;
-    private bool _localGrounded;
-    private float _localVerticalVel;
+    private float localAnimSpeed;
+    private bool localGrounded;
+    private float localVerticalVel;
 
-    private int _animIDSpeed;
-    private int _animIDGrounded;
-    private int _animIDJump;
-    private int _animIDFreeFall;
-    private int _animIDMotionSpeed;
+    private int animIDSpeed;
+    private int animIDGrounded;
+    private int animIDJump;
+    private int animIDFreeFall;
+    private int animIDMotionSpeed;
 
     public AudioClip LandingAudioClip;
     public AudioClip[] FootstepAudioClips;
@@ -45,47 +46,48 @@ public class PlayerMove : NetworkBehaviour
 
     private void Awake()
     {
-        _rb = GetComponent<Rigidbody>();
+        rb = GetComponent<Rigidbody>();
 
-        _rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
-        _rb.interpolation = RigidbodyInterpolation.None;
-        _rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+        rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+        rb.interpolation = RigidbodyInterpolation.None;
+        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
     }
 
     private void Start()
     {
-        TryGetComponent(out _animator);
+        TryGetComponent(out animator);
         AssignAnimationIDs();
     }
 
     public override void Spawned()
     {
-        if (_rb != null)
-            _rb.interpolation = RigidbodyInterpolation.None;
+        if (rb != null)
+            rb.interpolation = RigidbodyInterpolation.None;
     }
 
     private void AssignAnimationIDs()
     {
-        _animIDSpeed = Animator.StringToHash("Speed");
-        _animIDGrounded = Animator.StringToHash("Grounded");
-        _animIDJump = Animator.StringToHash("Jump");
-        _animIDFreeFall = Animator.StringToHash("FreeFall");
-        _animIDMotionSpeed = Animator.StringToHash("MotionSpeed");
+        animIDSpeed = Animator.StringToHash("Speed");
+        animIDGrounded = Animator.StringToHash("Grounded");
+        animIDJump = Animator.StringToHash("Jump");
+        animIDFreeFall = Animator.StringToHash("FreeFall");
+        animIDMotionSpeed = Animator.StringToHash("MotionSpeed");
     }
 
     public override void Render()
     {
-        if (_animator == null || _rb == null) return;
+        if (animator == null || rb == null)
+            return;
 
-        float speed = Object.HasInputAuthority ? _localAnimSpeed : _animSpeed;
-        bool grounded = Object.HasInputAuthority ? _localGrounded : _netGrounded;
-        float verticalVelocity = Object.HasInputAuthority ? _localVerticalVel : _netVerticalVel;
+        float speed = Object.HasInputAuthority ? localAnimSpeed : animSpeed;
+        bool grounded = Object.HasInputAuthority ? localGrounded : netGrounded;
+        float verticalVelocity = Object.HasInputAuthority ? localVerticalVel : netVerticalVel;
 
-        _animator.SetFloat(_animIDSpeed, speed, 0.1f, Time.deltaTime);
-        _animator.SetFloat(_animIDMotionSpeed, speed > 0.1f ? 1f : 0f);
-        _animator.SetBool(_animIDGrounded, grounded);
-        _animator.SetBool(_animIDJump, !grounded && verticalVelocity > 0.1f);
-        _animator.SetBool(_animIDFreeFall, !grounded && verticalVelocity < -0.1f);
+        animator.SetFloat(animIDSpeed, speed, 0.1f, Time.deltaTime);
+        animator.SetFloat(animIDMotionSpeed, speed > 0.1f ? 1f : 0f);
+        animator.SetBool(animIDGrounded, grounded);
+        animator.SetBool(animIDJump, !grounded && verticalVelocity > 0.1f);
+        animator.SetBool(animIDFreeFall, !grounded && verticalVelocity < -0.1f);
     }
 
     public override void FixedUpdateNetwork()
@@ -106,85 +108,80 @@ public class PlayerMove : NetworkBehaviour
         bool groundedContact = groundProbe && groundDist <= groundedContactDistance;
         bool groundedAnim = groundProbe && groundDist <= groundedAnimDistance;
 
-        if (Object.HasInputAuthority)
-        {
-            float localTargetSpeed = input.sprint.IsSet(0) ? runSpeed : walkSpeed;
-            _localAnimSpeed = localTargetSpeed * inputMag;
-            _localGrounded = groundedAnim;
-            _localVerticalVel = _rb.velocity.y;
-        }
+        rb.angularVelocity = Vector3.zero;
 
-        if (!Object.HasStateAuthority)
-            return;
-
-        _rb.angularVelocity = Vector3.zero;
-
-        float targetSpeed = input.sprint.IsSet(0) ? runSpeed : walkSpeed;
+        float targetSpeed = input.buttons.IsSet((int)InputButton.Sprint) ? runSpeed : walkSpeed;
         float moveSpeed = targetSpeed * inputMag;
 
-        _animSpeed = moveSpeed;
+        Vector3 velocity = rb.velocity;
+        Vector3 planar = desiredMoveDir * moveSpeed;
 
-        Vector3 v = _rb.velocity;
-        Vector3 playerPlanar = desiredMoveDir * moveSpeed;
-
-        v.x = playerPlanar.x;
-        v.z = playerPlanar.z;
+        velocity.x = planar.x;
+        velocity.z = planar.z;
 
         if (inputMag > rotateInputDeadzone && desiredMoveDir.sqrMagnitude > 0.0001f)
-        {
-            _lastStableLookDir = desiredMoveDir;
-        }
+            lastStableLookDir = desiredMoveDir;
 
-        if (_lastStableLookDir.sqrMagnitude > 0.0001f)
+        if (lastStableLookDir.sqrMagnitude > 0.0001f)
         {
-            float targetYaw = Mathf.Atan2(_lastStableLookDir.x, _lastStableLookDir.z) * Mathf.Rad2Deg;
+            float targetYaw = Mathf.Atan2(lastStableLookDir.x, lastStableLookDir.z) * Mathf.Rad2Deg;
             Quaternion targetRot = Quaternion.Euler(0f, targetYaw, 0f);
 
             Quaternion newRot = Quaternion.Slerp(
-                _rb.rotation,
+                rb.rotation,
                 targetRot,
                 rotateLerp * Runner.DeltaTime
             );
 
-            _rb.MoveRotation(newRot);
+            rb.MoveRotation(newRot);
         }
 
-        bool jumpPressed = input.jump.IsSet(0);
+        bool jumpPressed = input.buttons.WasPressed(previousButtons, (int)InputButton.Jump);
 
         if (jumpPressed && groundProbe)
         {
-            v.y = jumpForce;
+            velocity.y = jumpForce;
         }
         else
         {
-            if (groundProbe && v.y <= 0f && groundDist <= groundedSnapDistance)
+            if (groundProbe && velocity.y <= 0f && groundDist <= groundedSnapDistance)
             {
-                Vector3 p = _rb.position;
-                p.y -= groundDist;
-                _rb.MovePosition(p);
+                Vector3 pos = rb.position;
+                pos.y -= groundDist;
+                rb.MovePosition(pos);
 
                 groundedContact = true;
                 groundedAnim = true;
             }
 
-            if (groundedContact)
-            {
-                if (v.y < -groundedVelClamp)
-                    v.y = -groundedVelClamp;
-            }
+            if (groundedContact && velocity.y < -groundedVelClamp)
+                velocity.y = -groundedVelClamp;
         }
 
-        _rb.velocity = v;
+        rb.velocity = velocity;
 
-        _netGrounded = groundedAnim;
-        _netVerticalVel = v.y;
+        if (Object.HasInputAuthority)
+        {
+            localAnimSpeed = moveSpeed;
+            localGrounded = groundedAnim;
+            localVerticalVel = velocity.y;
+        }
+
+        if (Object.HasStateAuthority)
+        {
+            animSpeed = moveSpeed;
+            netGrounded = groundedAnim;
+            netVerticalVel = velocity.y;
+        }
+
+        previousButtons = input.buttons;
     }
 
     private bool IsGrounded(out RaycastHit hit)
     {
         float radius = 0.28f;
         float castDistance = 0.65f;
-        Vector3 origin = _rb.position + Vector3.up * 0.35f;
+        Vector3 origin = rb.position + Vector3.up * 0.35f;
 
         var scene = Runner.GetPhysicsScene();
         return scene.SphereCast(

@@ -23,7 +23,6 @@ public class RoomPlayer : NetworkBehaviour
     public int SelectedRoleValue { get; set; }
 
     public bool IsLocalPlayer => Object != null && Object.HasInputAuthority;
-
     public PlayerRole SelectedRole => (PlayerRole)SelectedRoleValue;
 
     public override void Spawned()
@@ -32,8 +31,6 @@ public class RoomPlayer : NetworkBehaviour
             ActivePlayers.Add(this);
 
         ActivePlayersChanged?.Invoke();
-
-        // OnChangedRender는 첫 Spawn 시 자동 호출되지 않으므로 직접 초기화 알림
         RaiseVisualChanged();
     }
 
@@ -70,6 +67,9 @@ public class RoomPlayer : NetworkBehaviour
         if (!Object.HasInputAuthority)
             return;
 
+        if (IsReady)
+            return;
+
         int nextRole = SelectedRole == PlayerRole.Cop
             ? (int)PlayerRole.Robber
             : (int)PlayerRole.Cop;
@@ -89,6 +89,9 @@ public class RoomPlayer : NetworkBehaviour
     [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]
     private void RPC_SetRole(int roleValue)
     {
+        if (IsReady)
+            return;
+
         if (roleValue != (int)PlayerRole.Cop && roleValue != (int)PlayerRole.Robber)
             return;
 

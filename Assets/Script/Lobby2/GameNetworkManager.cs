@@ -25,7 +25,8 @@ public class GameNetworkManager : MonoBehaviour, INetworkRunnerCallbacks
     private NetworkSceneManagerDefault sceneManager;
     private LobbyUIManager uiManager;
 
-    private readonly List<SessionInfo> cachedSessionList = new List<SessionInfo>();
+    private readonly List<SessionInfo> cachedSessionList = new();
+    private readonly Dictionary<PlayerRef, PlayerRole> cachedSelectedRoles = new();
 
     private bool isBusy = false;
     private bool isInSession = false;
@@ -51,19 +52,6 @@ public class GameNetworkManager : MonoBehaviour, INetworkRunnerCallbacks
         SceneManager.sceneLoaded -= OnSceneLoaded;
     }
 
-    /*
-    private async void Start()
-    {
-        Debug.Log($"GameNetworkManager Start 호출: {gameObject.name} / instanceID={GetInstanceID()}");
-
-        if (SceneManager.GetActiveScene().name == lobby2SceneName)
-        {
-            uiManager = FindObjectOfType<LobbyUIManager>(true);
-            await EnsureRunnerAndJoinLobby();
-        }
-    }
-    */
-
     private async void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         if (scene.name != lobby2SceneName)
@@ -81,8 +69,6 @@ public class GameNetworkManager : MonoBehaviour, INetworkRunnerCallbacks
 
     private NetworkRunner CreateRunner()
     {
-        Debug.Log($"CreateRunner 호출: {gameObject.name} / instanceID={GetInstanceID()}");
-
         GameObject go = new GameObject("GameRunner");
         DontDestroyOnLoad(go);
 
@@ -93,8 +79,6 @@ public class GameNetworkManager : MonoBehaviour, INetworkRunnerCallbacks
         go.AddComponent<RunnerSimulatePhysics3D>();
 
         runner.AddCallbacks(this);
-
-        Debug.Log($"Runner 생성 완료 / runnerID={runner.GetInstanceID()}");
         return runner;
     }
 
@@ -131,7 +115,6 @@ public class GameNetworkManager : MonoBehaviour, INetworkRunnerCallbacks
             return;
 
         isBusy = true;
-
         cachedSessionList.Clear();
 
         uiManager = FindObjectOfType<LobbyUIManager>(true);
@@ -170,13 +153,9 @@ public class GameNetworkManager : MonoBehaviour, INetworkRunnerCallbacks
         Debug.Log($"방 생성 결과: {result.Ok}");
 
         if (result.Ok)
-        {
             isInSession = true;
-        }
         else
-        {
             Debug.LogError($"방 생성 실패: {result.ShutdownReason}");
-        }
 
         isBusy = false;
     }
@@ -206,13 +185,9 @@ public class GameNetworkManager : MonoBehaviour, INetworkRunnerCallbacks
         Debug.Log($"빠른 참가 결과: {result.Ok}");
 
         if (result.Ok)
-        {
             isInSession = true;
-        }
         else
-        {
             Debug.LogWarning($"빠른 참가 실패: {result.ShutdownReason}");
-        }
 
         isBusy = false;
     }
@@ -223,35 +198,29 @@ public class GameNetworkManager : MonoBehaviour, INetworkRunnerCallbacks
             return;
 
         isBusy = true;
-
         await ShutdownRunner();
         SceneManager.LoadScene(lobby1SceneName);
     }
 
     public async void LeaveSessionAndReturnToLobby2()
     {
-        Debug.Log($"LeaveSessionAndReturnToLobby2 호출됨 / isBusy={isBusy}");
-
         if (isBusy)
             return;
 
         isBusy = true;
-
         await ShutdownRunner();
-        Debug.Log("Lobby2 로드 시작");
         SceneManager.LoadScene(lobby2SceneName);
     }
 
     private async Task ShutdownRunner()
     {
-        Debug.Log($"ShutdownRunner 진입 / runner null = {runner == null}");
-
         if (runner == null)
         {
             sceneManager = null;
             isInSession = false;
             isBusy = false;
             cachedSessionList.Clear();
+            cachedSelectedRoles.Clear();
             UpdateQuickJoinButton();
             return;
         }
@@ -265,7 +234,6 @@ public class GameNetworkManager : MonoBehaviour, INetworkRunnerCallbacks
         }
 
         await runner.Shutdown();
-        Debug.Log("runner.Shutdown 완료");
 
         if (runner.gameObject != null)
             Destroy(runner.gameObject);
@@ -276,6 +244,7 @@ public class GameNetworkManager : MonoBehaviour, INetworkRunnerCallbacks
         isBusy = false;
 
         cachedSessionList.Clear();
+        cachedSelectedRoles.Clear();
         UpdateQuickJoinButton();
     }
 
@@ -330,17 +299,35 @@ public class GameNetworkManager : MonoBehaviour, INetworkRunnerCallbacks
         return isInSession;
     }
 
+    public void CacheSelectedRole(PlayerRef player, PlayerRole role)
+    {
+        cachedSelectedRoles[player] = role;
+    }
+
+    public bool TryGetCachedRole(PlayerRef player, out PlayerRole role)
+    {
+        return cachedSelectedRoles.TryGetValue(player, out role);
+    }
+
+    public void RemoveCachedRole(PlayerRef player)
+    {
+        cachedSelectedRoles.Remove(player);
+    }
+
+    public void ClearCachedRoles()
+    {
+        cachedSelectedRoles.Clear();
+    }
+
     public void OnSessionListUpdated(NetworkRunner runner, List<SessionInfo> sessionList)
     {
         if (runner != this.runner || isInSession)
             return;
 
-        Debug.Log("세션 목록 업데이트 수신: " + sessionList.Count);
-
         cachedSessionList.Clear();
         cachedSessionList.AddRange(sessionList);
 
-        List<RoomInfoData> roomList = new List<RoomInfoData>();
+        List<RoomInfoData> roomList = new();
 
         foreach (SessionInfo session in sessionList)
         {
@@ -364,7 +351,6 @@ public class GameNetworkManager : MonoBehaviour, INetworkRunnerCallbacks
 
     public void OnShutdown(NetworkRunner runner, ShutdownReason shutdownReason)
     {
-        Debug.Log($"Runner Shutdown: {shutdownReason}");
         isInSession = false;
     }
 
@@ -402,6 +388,7 @@ public class GameNetworkManager : MonoBehaviour, INetworkRunnerCallbacks
     public void OnPlayerLeft(NetworkRunner runner, PlayerRef player)
     {
         Debug.Log($"플레이어 퇴장: {player}");
+        RemoveCachedRole(player);
     }
 
     public void OnConnectRequest(NetworkRunner runner, NetworkRunnerCallbackArgs.ConnectRequest request, byte[] token) { }

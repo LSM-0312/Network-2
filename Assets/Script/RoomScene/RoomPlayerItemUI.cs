@@ -62,7 +62,7 @@ public class RoomPlayerItemUI : MonoBehaviour
         }
 
         if (btnRole != null)
-            btnRole.interactable = targetPlayer.IsLocalPlayer;
+            btnRole.interactable = targetPlayer.IsLocalPlayer && !targetPlayer.IsReady;
     }
 
     private void OnClickRole()
