@@ -65,8 +65,6 @@ public class PlayerMove : NetworkBehaviour
     {
         if (rb != null)
             rb.interpolation = RigidbodyInterpolation.None;
-
-        Runner.SetIsSimulated(Object, true);
     }
 
     private void AssignAnimationIDs()

@@ -400,7 +400,6 @@ GameObject:
   - component: {fileID: -4967492758880432229}
   - component: {fileID: 1113964669022438563}
   - component: {fileID: 7647273314150020590}
-  - component: {fileID: 528682401838215030}
   - component: {fileID: 405606815467210492}
   - component: {fileID: 1054353340413725343}
   - component: {fileID: 5474943168707730723}
@@ -408,6 +407,9 @@ GameObject:
   - component: {fileID: 3539868474985722455}
   - component: {fileID: 1808817848543335226}
   - component: {fileID: 6436552171768654132}
+  - component: {fileID: 4838389706831846990}
+  - component: {fileID: 7798990355720764978}
+  - component: {fileID: 1150725872291933546}
   m_Layer: 6
   m_Name: PlayerArmature 2
   m_TagString: Player
@@ -501,13 +503,15 @@ MonoBehaviour:
   NetworkedBehaviours:
   - {fileID: 1113964669022438563}
   - {fileID: 7647273314150020590}
-  - {fileID: 528682401838215030}
   - {fileID: 405606815467210492}
   - {fileID: 1054353340413725343}
   - {fileID: 4293461443756284169}
   - {fileID: 3539868474985722455}
   - {fileID: 1808817848543335226}
   - {fileID: 6436552171768654132}
+  - {fileID: 4838389706831846990}
+  - {fileID: 7798990355720764978}
+  - {fileID: 1150725872291933546}
   ForceRemoteRenderTimeframe: 0
 --- !u!136 &-4967492758880432229
 CapsuleCollider:
@@ -571,22 +575,6 @@ MonoBehaviour:
   LandingAudioClip: {fileID: 0}
   FootstepAudioClips: []
   FootstepAudioVolume: 0.5
---- !u!114 &528682401838215030
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1147487831468856441}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 63d8aa63d9228ba46b46cc85cc532d71, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  playerMask:
-    serializedVersion: 2
-    m_Bits: 64
-  catchCooldownSeconds: 3
 --- !u!114 &405606815467210492
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -707,8 +695,6 @@ MonoBehaviour:
   _CurrentHp: 0
   _IsDead:
     _value: 0
-  _IsCaught:
-    _value: 0
 --- !u!114 &1808817848543335226
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -750,6 +736,53 @@ MonoBehaviour:
   lethalHeight: 12
   minDamage: 10
   maxDamage: 100
+--- !u!114 &4838389706831846990
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1147487831468856441}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fb541b469b939df4ba130686d9b5e56a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  avatar: {fileID: 1054353340413725343}
+  itemCatalog: {fileID: 11400000, guid: ae3351e8dc1ab364db243a0d4a835134, type: 2}
+  roleDefaultItems: {fileID: 11400000, guid: 4136f4a1474e46c4db1e6cb058752060, type: 2}
+  testMainItem: {fileID: 11400000, guid: 66c3f2d28a4537c4c9ca38fccbc3b3ff, type: 2}
+  testThrowableItem: {fileID: 11400000, guid: 66c3f2d28a4537c4c9ca38fccbc3b3ff, type: 2}
+  testThrowableCount: 2
+  _CurrentSlotIndex: 0
+--- !u!114 &7798990355720764978
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1147487831468856441}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 466bf15d83aaa5c4b8c9e8afbf58f3d2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  equipmentBar: {fileID: 4838389706831846990}
+--- !u!114 &1150725872291933546
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1147487831468856441}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0dfddbd048acf8d40b0d9cbed162b860, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  equipmentBar: {fileID: 4838389706831846990}
+  itemCatalog: {fileID: 11400000, guid: ae3351e8dc1ab364db243a0d4a835134, type: 2}
+  handSocket: {fileID: 4978491841230273051}
 --- !u!1 &1423693755871402394
 GameObject:
   m_ObjectHideFlags: 0

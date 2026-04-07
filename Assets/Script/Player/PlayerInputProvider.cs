@@ -11,6 +11,11 @@ public class InputProvider : NetworkBehaviour, INetworkRunnerCallbacks
     private bool mouse0Pressed;
     private bool mouse1Pressed;
 
+    private bool slot1Pressed;
+    private bool slot2Pressed;
+    private bool slot3Pressed;
+    private bool slot4Pressed;
+
     public override void Spawned()
     {
         if (Object.HasInputAuthority)
@@ -36,6 +41,18 @@ public class InputProvider : NetworkBehaviour, INetworkRunnerCallbacks
 
         if (Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame)
             mouse1Pressed = true;
+
+        if (Keyboard.current != null && Keyboard.current.digit1Key.wasPressedThisFrame)
+            slot1Pressed = true;
+
+        if (Keyboard.current != null && Keyboard.current.digit2Key.wasPressedThisFrame)
+            slot2Pressed = true;
+
+        if (Keyboard.current != null && Keyboard.current.digit3Key.wasPressedThisFrame)
+            slot3Pressed = true;
+
+        if (Keyboard.current != null && Keyboard.current.digit4Key.wasPressedThisFrame)
+            slot4Pressed = true;
 #else
         if (Input.GetKeyDown(KeyCode.Space))
             jumpPressed = true;
@@ -45,6 +62,18 @@ public class InputProvider : NetworkBehaviour, INetworkRunnerCallbacks
 
         if (Input.GetMouseButtonDown(1))
             mouse1Pressed = true;
+
+        if (Input.GetKeyDown(KeyCode.Alpha1))
+            slot1Pressed = true;
+
+        if (Input.GetKeyDown(KeyCode.Alpha2))
+            slot2Pressed = true;
+
+        if (Input.GetKeyDown(KeyCode.Alpha3))
+            slot3Pressed = true;
+
+        if (Input.GetKeyDown(KeyCode.Alpha4))
+            slot4Pressed = true;
 #endif
     }
 
@@ -98,11 +127,21 @@ public class InputProvider : NetworkBehaviour, INetworkRunnerCallbacks
         data.buttons.Set((int)InputButton.Mouse0, mouse0Pressed);
         data.buttons.Set((int)InputButton.Mouse1, mouse1Pressed);
 
+        data.buttons.Set((int)InputButton.Slot1, slot1Pressed);
+        data.buttons.Set((int)InputButton.Slot2, slot2Pressed);
+        data.buttons.Set((int)InputButton.Slot3, slot3Pressed);
+        data.buttons.Set((int)InputButton.Slot4, slot4Pressed);
+
         input.Set(data);
 
         jumpPressed = false;
         mouse0Pressed = false;
         mouse1Pressed = false;
+
+        slot1Pressed = false;
+        slot2Pressed = false;
+        slot3Pressed = false;
+        slot4Pressed = false;
     }
 
     public void OnInputMissing(NetworkRunner runner, PlayerRef player, NetworkInput input) { }

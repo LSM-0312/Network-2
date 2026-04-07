@@ -362,6 +362,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3961373815902502068}
   - component: {fileID: 6114188410512410612}
+  - component: {fileID: 3976474794222421650}
   m_Layer: 5
   m_Name: POST
   m_TagString: Untagged
@@ -401,6 +402,23 @@ MonoBehaviour:
   blendDistance: 0
   weight: 1
   priority: 0
+--- !u!114 &3976474794222421650
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1783562392607655952}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 172515602e62fb746b5d573b38a5fe58, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_IsGlobal: 1
+  priority: 0
+  blendDistance: 0
+  weight: 1
+  sharedProfile: {fileID: 11400000, guid: 2286fa246a1658a4c929527e4ce52b2c, type: 2}
 --- !u!1 &2368322337404342234
 GameObject:
   m_ObjectHideFlags: 0
