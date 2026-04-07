@@ -25,6 +25,7 @@ public class PlayerMove : NetworkBehaviour
     [Networked] private float netVerticalVel { get; set; }
     [Networked] private NetworkButtons previousButtons { get; set; }
 
+    private PlayerHealth health;
     private Rigidbody rb;
     private Animator animator;
 
@@ -51,6 +52,7 @@ public class PlayerMove : NetworkBehaviour
         rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
         rb.interpolation = RigidbodyInterpolation.None;
         rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+        TryGetComponent(out health);
     }
 
     private void Start()
@@ -63,6 +65,8 @@ public class PlayerMove : NetworkBehaviour
     {
         if (rb != null)
             rb.interpolation = RigidbodyInterpolation.None;
+
+        Runner.SetIsSimulated(Object, true);
     }
 
     private void AssignAnimationIDs()
@@ -92,6 +96,32 @@ public class PlayerMove : NetworkBehaviour
 
     public override void FixedUpdateNetwork()
     {
+        if (health != null && !health.CanControl)
+        {
+            if (Object.HasStateAuthority)
+            {
+                Vector3 stop = rb.velocity;
+                stop.x = 0f;
+                stop.z = 0f;
+                rb.velocity = stop;
+            }
+
+            if (Object.HasInputAuthority)
+            {
+                localAnimSpeed = 0f;
+                localGrounded = true;
+                localVerticalVel = rb.velocity.y;
+            }
+
+            if (Object.HasStateAuthority)
+            {
+                animSpeed = 0f;
+                netGrounded = true;
+                netVerticalVel = rb.velocity.y;
+            }
+
+            return;
+        }
         if (!GetInput(out NetworkInputData input))
             return;
 

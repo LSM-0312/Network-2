@@ -405,6 +405,9 @@ GameObject:
   - component: {fileID: 1054353340413725343}
   - component: {fileID: 5474943168707730723}
   - component: {fileID: 4293461443756284169}
+  - component: {fileID: 3539868474985722455}
+  - component: {fileID: 1808817848543335226}
+  - component: {fileID: 6436552171768654132}
   m_Layer: 6
   m_Name: PlayerArmature 2
   m_TagString: Player
@@ -502,6 +505,9 @@ MonoBehaviour:
   - {fileID: 405606815467210492}
   - {fileID: 1054353340413725343}
   - {fileID: 4293461443756284169}
+  - {fileID: 3539868474985722455}
+  - {fileID: 1808817848543335226}
+  - {fileID: 6436552171768654132}
   ForceRemoteRenderTimeframe: 0
 --- !u!136 &-4967492758880432229
 CapsuleCollider:
@@ -572,7 +578,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1147487831468856441}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 63d8aa63d9228ba46b46cc85cc532d71, type: 3}
   m_Name: 
@@ -685,6 +691,65 @@ MonoBehaviour:
     Position: 0.01
     Rotation: 0.01
     Scale: 0.01
+--- !u!114 &3539868474985722455
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1147487831468856441}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 273c5bc6082c3b0479af1404f282a28f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxHp: 100
+  _CurrentHp: 0
+  _IsDead:
+    _value: 0
+  _IsCaught:
+    _value: 0
+--- !u!114 &1808817848543335226
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1147487831468856441}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cf6db9ef65d30974297c8b25c4eb4d83, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  attackRadius: 1.2
+  attackRange: 1.8
+  attackHeight: 0.9
+  attackCooldown: 0.45
+  attackHalfAngle: 50
+  minDamage: 25
+  maxDamage: 35
+  playerMask:
+    serializedVersion: 2
+    m_Bits: 64
+--- !u!114 &6436552171768654132
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1147487831468856441}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 27b4ae5092d5c6c4fb92a02a31b3985c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  groundMask:
+    serializedVersion: 2
+    m_Bits: 8
+  safeHeight: 3
+  lethalHeight: 12
+  minDamage: 10
+  maxDamage: 100
 --- !u!1 &1423693755871402394
 GameObject:
   m_ObjectHideFlags: 0
