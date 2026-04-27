@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(menuName = "Game/Items/Item Catalog")]
+[CreateAssetMenu(menuName = "Game/Scriptable Object/Items/Item Catalog")]
 public class ItemCatalog : ScriptableObject
 {
     [SerializeField] private ItemDefinition[] items;

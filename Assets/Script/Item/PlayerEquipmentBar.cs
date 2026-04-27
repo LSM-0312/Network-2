@@ -3,14 +3,17 @@ using UnityEngine;
 
 public class PlayerEquipmentBar : NetworkBehaviour, IAfterSpawned
 {
+    [Header("Refs")]
     [SerializeField] private PlayerAvatar avatar;
     [SerializeField] private ItemCatalog itemCatalog;
-    [SerializeField] private RoleDefaultItems roleDefaultItems;
 
-    //테스트
-    [SerializeField] private ItemDefinition testMainItem;
-    [SerializeField] private ItemDefinition testThrowableItem;
-    [SerializeField] private int testThrowableCount = 2;
+    [Header("Default Slot1")]
+    [SerializeField] private ItemDefinition copDefaultItem;
+    [SerializeField] private ItemDefinition robberDefaultItem;
+
+    [Header("Robber Start Throwable")]
+    [SerializeField] private ThrowableItemDefinition robberStartThrowableItem;
+    [SerializeField] private int robberStartThrowableAmmo = 2;
 
     [Networked, Capacity(4)]
     public NetworkArray<EquipmentSlotState> Slots => default;
@@ -52,21 +55,16 @@ public class PlayerEquipmentBar : NetworkBehaviour, IAfterSpawned
             return;
 
         ItemDefinition slot1Item = avatar.Role == PlayerRole.Cop
-            ? roleDefaultItems.copSlot1Item
-            : roleDefaultItems.robberSlot1Item;
+            ? copDefaultItem
+            : robberDefaultItem;
 
         SetSlotFromItem(0, slot1Item);
         ClearSlot(1);
         ClearSlot(2);
         ClearSlot(3);
 
-        //테스트~
-        if (testMainItem != null)
-            EquipMainItem(testMainItem);
-
-        if (testThrowableItem != null)
-            EquipThrowable(testThrowableItem, testThrowableCount);
-        //~테스트
+        if (avatar.Role == PlayerRole.Robber && robberStartThrowableItem != null)
+            EquipThrowable(robberStartThrowableItem, robberStartThrowableAmmo);
 
         CurrentSlotIndex = 0;
         initialized = true;
@@ -108,7 +106,7 @@ public class PlayerEquipmentBar : NetworkBehaviour, IAfterSpawned
         CurrentSlotIndex = (byte)index;
     }
 
-    public void SetSlotFromItem(int index, ItemDefinition item, int ammoOverride = -1, int stackOverride = -1)
+    public void SetSlotFromItem(int index, ItemDefinition item, int ammoOverride = -1)
     {
         if (!Object.HasStateAuthority)
             return;
@@ -125,8 +123,7 @@ public class PlayerEquipmentBar : NetworkBehaviour, IAfterSpawned
         EquipmentSlotState state = new EquipmentSlotState
         {
             itemId = item.itemId,
-            ammo = (short)(ammoOverride >= 0 ? ammoOverride : item.defaultAmmo),
-            stackCount = (short)(stackOverride >= 0 ? stackOverride : item.defaultStack)
+            ammo = (short)(ammoOverride >= 0 ? ammoOverride : item.defaultAmmo)
         };
 
         Slots.Set(index, state);
@@ -145,17 +142,17 @@ public class PlayerEquipmentBar : NetworkBehaviour, IAfterSpawned
 
     public void EquipMainItem(ItemDefinition item, int ammoOverride = -1)
     {
-        SetSlotFromItem(1, item, ammoOverride, 1);
+        SetSlotFromItem(1, item, ammoOverride);
     }
 
     public void EquipSubItem(ItemDefinition item, int ammoOverride = -1)
     {
-        SetSlotFromItem(2, item, ammoOverride, 1);
+        SetSlotFromItem(2, item, ammoOverride);
     }
 
-    public void EquipThrowable(ItemDefinition item, int stackOverride = -1)
+    public void EquipThrowable(ThrowableItemDefinition item, int ammoOverride = -1)
     {
-        SetSlotFromItem(3, item, -1, stackOverride);
+        SetSlotFromItem(3, item, ammoOverride);
     }
 
     public bool TryConsumeAmmo(int slotIndex, int amount)
@@ -169,23 +166,8 @@ public class PlayerEquipmentBar : NetworkBehaviour, IAfterSpawned
             return false;
 
         slot.ammo -= (short)amount;
-        Slots.Set(slotIndex, slot);
-        return true;
-    }
 
-    public bool TryConsumeStack(int slotIndex, int amount)
-    {
-        if (!Object.HasStateAuthority)
-            return false;
-
-        EquipmentSlotState slot = Slots.Get(slotIndex);
-
-        if (slot.IsEmpty || slot.stackCount < amount)
-            return false;
-
-        slot.stackCount -= (short)amount;
-
-        if (slot.stackCount <= 0)
+        if (slot.ammo <= 0)
             Slots.Set(slotIndex, default);
         else
             Slots.Set(slotIndex, slot);

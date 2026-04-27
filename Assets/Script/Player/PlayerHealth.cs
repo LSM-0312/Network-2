@@ -1,7 +1,7 @@
 using Fusion;
 using UnityEngine;
 
-public class PlayerHealth : NetworkBehaviour
+public class PlayerHealth : NetworkBehaviour, IDamageable
 {
     [SerializeField] private int maxHp = 100;
 

@@ -750,10 +750,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   avatar: {fileID: 1054353340413725343}
   itemCatalog: {fileID: 11400000, guid: ae3351e8dc1ab364db243a0d4a835134, type: 2}
-  roleDefaultItems: {fileID: 11400000, guid: 4136f4a1474e46c4db1e6cb058752060, type: 2}
-  testMainItem: {fileID: 11400000, guid: 66c3f2d28a4537c4c9ca38fccbc3b3ff, type: 2}
-  testThrowableItem: {fileID: 11400000, guid: 66c3f2d28a4537c4c9ca38fccbc3b3ff, type: 2}
-  testThrowableCount: 2
+  copDefaultItem: {fileID: 11400000, guid: de63e74c297689d4da2ef3a237f40781, type: 2}
+  robberDefaultItem: {fileID: 11400000, guid: 52af53b063ac64b4bb7e01cf5ab71b77, type: 2}
+  robberStartThrowableItem: {fileID: 11400000, guid: 66c3f2d28a4537c4c9ca38fccbc3b3ff, type: 2}
+  robberStartThrowableCount: 2
   _CurrentSlotIndex: 0
 --- !u!114 &7798990355720764978
 MonoBehaviour:
