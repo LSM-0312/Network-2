@@ -9,23 +9,16 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1d50cfa84cf80fa41a4213cd4d913f5a, type: 3}
-  m_Name: ITEM_Baton
+  m_Script: {fileID: 11500000, guid: 8289457684f758f4eb364ef174d447af, type: 3}
+  m_Name: Throwable Item Definition
   m_EditorClassIdentifier: 
-  itemId: 2
-  displayName: Baton
+  itemId: 10
+  displayName: throwable
   icon: {fileID: 0}
-  itemType: 2
-  useMode: 1
-  heldViewPrefab: {fileID: 0}
-  defaultAmmo: 0
-  defaultStack: 1
+  heldViewPrefab: {fileID: 201130747161140256, guid: 465db6bb178301046bc9094f34d6ae43, type: 3}
+  defaultAmmo: 2
   projectilePrefab:
-    RawGuidValue: 00000000000000000000000000000000
+    RawGuidValue: 465db6bb178301046bc9094f34d6ae43
   throwForce: 15
   upwardForce: 1.5
-  range: 50
-  damage: 20
-  hitMask:
-    serializedVersion: 2
-    m_Bits: 64
+  ammoPerUse: 1

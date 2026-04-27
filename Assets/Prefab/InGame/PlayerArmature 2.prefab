@@ -707,16 +707,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cf6db9ef65d30974297c8b25c4eb4d83, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  attackRadius: 1.2
-  attackRange: 1.8
   attackHeight: 0.9
-  attackCooldown: 0.45
   attackHalfAngle: 50
-  minDamage: 25
-  maxDamage: 35
-  playerMask:
-    serializedVersion: 2
-    m_Bits: 64
 --- !u!114 &6436552171768654132
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -749,11 +741,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   avatar: {fileID: 1054353340413725343}
-  itemCatalog: {fileID: 11400000, guid: ae3351e8dc1ab364db243a0d4a835134, type: 2}
-  copDefaultItem: {fileID: 11400000, guid: de63e74c297689d4da2ef3a237f40781, type: 2}
-  robberDefaultItem: {fileID: 11400000, guid: 52af53b063ac64b4bb7e01cf5ab71b77, type: 2}
-  robberStartThrowableItem: {fileID: 11400000, guid: 66c3f2d28a4537c4c9ca38fccbc3b3ff, type: 2}
-  robberStartThrowableCount: 2
+  itemCatalog: {fileID: 11400000, guid: 9b508de46461c9d49bd2e6cda436c479, type: 2}
+  copDefaultItem: {fileID: 11400000, guid: bdbf39a271e09404eb1cc1ff59130afc, type: 2}
+  robberDefaultItem: {fileID: 11400000, guid: c429183e18567b84ba3bd73918ae2610, type: 2}
+  robberStartThrowableItem: {fileID: 11400000, guid: 337fdd1d86348764a96d53ec8224dd10, type: 2}
+  robberStartThrowableAmmo: 2
   _CurrentSlotIndex: 0
 --- !u!114 &7798990355720764978
 MonoBehaviour:
@@ -768,6 +760,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   equipmentBar: {fileID: 4838389706831846990}
+  meleeAttack: {fileID: 1808817848543335226}
+  throwPoint: {fileID: 0}
 --- !u!114 &1150725872291933546
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -781,7 +775,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   equipmentBar: {fileID: 4838389706831846990}
-  itemCatalog: {fileID: 11400000, guid: ae3351e8dc1ab364db243a0d4a835134, type: 2}
+  itemCatalog: {fileID: 11400000, guid: 9b508de46461c9d49bd2e6cda436c479, type: 2}
   handSocket: {fileID: 4978491841230273051}
 --- !u!1 &1423693755871402394
 GameObject:

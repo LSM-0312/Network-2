@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b9d280f22fe4a6c468f375056fd2dd1d, type: 3}
-  m_Name: ItemCatalog_Main
+  m_Name: ItemCatalog
   m_EditorClassIdentifier: 
   items:
-  - {fileID: 11400000, guid: 52af53b063ac64b4bb7e01cf5ab71b77, type: 2}
-  - {fileID: 11400000, guid: de63e74c297689d4da2ef3a237f40781, type: 2}
-  - {fileID: 11400000, guid: 66c3f2d28a4537c4c9ca38fccbc3b3ff, type: 2}
+  - {fileID: 11400000, guid: c429183e18567b84ba3bd73918ae2610, type: 2}
+  - {fileID: 11400000, guid: bdbf39a271e09404eb1cc1ff59130afc, type: 2}
+  - {fileID: 11400000, guid: 337fdd1d86348764a96d53ec8224dd10, type: 2}
