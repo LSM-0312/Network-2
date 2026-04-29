@@ -34,12 +34,6 @@ public class PlayerEquipmentBar : NetworkBehaviour, IAfterSpawned
         TryInitializeDefaultSlots();
     }
 
-    public override void FixedUpdateNetwork()
-    {
-        if (Object.HasStateAuthority && !initialized)
-            TryInitializeDefaultSlots();
-    }
-
     private void TryInitializeDefaultSlots()
     {
         if (!Object.HasStateAuthority)
