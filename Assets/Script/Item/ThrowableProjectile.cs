@@ -7,9 +7,11 @@ public abstract class ThrowableProjectile : NetworkBehaviour
 
     protected PlayerRef owner;
 
-    public virtual void Init(PlayerRef ownerRef, float force, float upwardForce)
+    public void Init(PlayerRef ownerRef, float force, float upwardForce, Vector3 visualScale)
     {
         owner = ownerRef;
+
+        transform.localScale = visualScale;
 
         if (rb == null)
             TryGetComponent(out rb);

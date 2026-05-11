@@ -9,6 +9,8 @@ public class ItemDefinition : ScriptableObject
     public Sprite icon;
     public GameObject heldViewPrefab;
 
-    [Header("Start")]
-    public int defaultAmmo;
+    [Header("Held View")]
+    public Vector3 heldLocalPosition;
+    public Vector3 heldLocalEulerAngles;
+    public Vector3 heldLocalScale;
 }

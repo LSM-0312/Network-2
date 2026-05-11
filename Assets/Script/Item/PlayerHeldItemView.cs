@@ -40,8 +40,10 @@ public class PlayerHeldItemView : NetworkBehaviour
             return;
 
         currentView = Instantiate(item.heldViewPrefab, handSocket);
-        currentView.transform.localPosition = Vector3.zero;
-        currentView.transform.localRotation = Quaternion.identity;
-        currentView.transform.localScale = Vector3.one;
+
+        Transform view = currentView.transform;
+        view.localPosition = item.heldLocalPosition;
+        view.localRotation = Quaternion.Euler(item.heldLocalEulerAngles);
+        view.localScale = item.heldLocalScale;
     }
 }

@@ -16,4 +16,6 @@ MonoBehaviour:
   displayName: Unarmed
   icon: {fileID: 0}
   heldViewPrefab: {fileID: 0}
-  defaultAmmo: 0
+  heldLocalPosition: {x: 0, y: 0, z: 0}
+  heldLocalEulerAngles: {x: 0, y: 0, z: 0}
+  heldLocalScale: {x: 1, y: 1, z: 1}

@@ -16,9 +16,10 @@ MonoBehaviour:
   displayName: throwable
   icon: {fileID: 0}
   heldViewPrefab: {fileID: 201130747161140256, guid: 465db6bb178301046bc9094f34d6ae43, type: 3}
-  defaultAmmo: 2
+  heldLocalPosition: {x: 0, y: 0, z: 0}
+  heldLocalEulerAngles: {x: -90, y: 0, z: 0}
+  heldLocalScale: {x: 0.4, y: 0.4, z: 0.4}
   projectilePrefab:
     RawGuidValue: 465db6bb178301046bc9094f34d6ae43
   throwForce: 15
   upwardForce: 1.5
-  ammoPerUse: 1

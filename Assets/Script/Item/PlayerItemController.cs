@@ -1,5 +1,6 @@
 using Fusion;
 using UnityEngine;
+using static Unity.Collections.Unicode;
 
 public class PlayerItemController : NetworkBehaviour
 {
@@ -39,6 +40,7 @@ public class PlayerItemController : NetworkBehaviour
 
     private void UseCurrentItemPrimary()
     {
+        // 현재 아이템 가져오기
         ItemDefinition item = equipmentBar.GetCurrentItem();
         if (item == null)
             return;
@@ -56,8 +58,6 @@ public class PlayerItemController : NetworkBehaviour
             UseThrowable(slotIndex, throwableItem);
             return;
         }
-
-        // 기본 ItemDefinition(예: Unarmed)은 아무 동작 안 함
     }
 
     private void UseMelee(MeleeItemDefinition item)
@@ -73,7 +73,7 @@ public class PlayerItemController : NetworkBehaviour
         if (throwPoint == null)
             return;
 
-        if (!equipmentBar.TryConsumeAmmo(slotIndex, item.ammoPerUse))
+        if (!equipmentBar.TryConsumeAmmo(slotIndex, 1))
             return;
 
         Runner.Spawn(
@@ -85,7 +85,7 @@ public class PlayerItemController : NetworkBehaviour
             {
                 ThrowableProjectile projectile = obj.GetComponent<ThrowableProjectile>();
                 if (projectile != null)
-                    projectile.Init(Object.InputAuthority, item.throwForce, item.upwardForce);
+                    projectile.Init(Object.InputAuthority, item.throwForce, item.upwardForce, item.heldLocalScale);
             }
         );
     }

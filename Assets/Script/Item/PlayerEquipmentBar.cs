@@ -57,6 +57,7 @@ public class PlayerEquipmentBar : NetworkBehaviour, IAfterSpawned
         ClearSlot(2);
         ClearSlot(3);
 
+        // µµµÏ ½ÃÀÛ ½Ã ¼¶±¤Åº Áö±Þ
         if (avatar.Role == PlayerRole.Robber && robberStartThrowableItem != null)
             EquipThrowable(robberStartThrowableItem, robberStartThrowableAmmo);
 
@@ -77,7 +78,6 @@ public class PlayerEquipmentBar : NetworkBehaviour, IAfterSpawned
     public ItemDefinition GetItemInSlot(int index)
     {
         EquipmentSlotState state = Slots.Get(index);
-
         if (state.IsEmpty || itemCatalog == null)
             return null;
 
@@ -117,7 +117,7 @@ public class PlayerEquipmentBar : NetworkBehaviour, IAfterSpawned
         EquipmentSlotState state = new EquipmentSlotState
         {
             itemId = item.itemId,
-            ammo = (short)(ammoOverride >= 0 ? ammoOverride : item.defaultAmmo)
+            ammo = (short)(ammoOverride >= 0 ? ammoOverride : 0)  // ±âº» ammo °ªÀº 0
         };
 
         Slots.Set(index, state);

@@ -8,5 +8,4 @@ public class ThrowableItemDefinition : ItemDefinition
     public NetworkPrefabRef projectilePrefab;
     public float throwForce = 15f;
     public float upwardForce = 1.5f;
-    public int ammoPerUse = 1;
 }
