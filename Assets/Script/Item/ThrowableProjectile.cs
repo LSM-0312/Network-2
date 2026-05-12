@@ -7,11 +7,12 @@ public abstract class ThrowableProjectile : NetworkBehaviour
 
     protected PlayerRef owner;
 
-    public void Init(PlayerRef ownerRef, float force, float upwardForce, Vector3 visualScale)
+    public virtual void Init(PlayerRef ownerRef, float force, float upwardForce)
     {
         owner = ownerRef;
 
-        transform.localScale = visualScale;
+        if (!Object.HasStateAuthority)
+            return;
 
         if (rb == null)
             TryGetComponent(out rb);
@@ -22,7 +23,7 @@ public abstract class ThrowableProjectile : NetworkBehaviour
         rb.velocity = Vector3.zero;
         rb.angularVelocity = Vector3.zero;
 
-        Vector3 dir = transform.forward * force + Vector3.up * upwardForce;
-        rb.AddForce(dir, ForceMode.VelocityChange);
+        Vector3 velocity = transform.forward * force + Vector3.up * upwardForce;
+        rb.AddForce(velocity, ForceMode.VelocityChange);
     }
 }

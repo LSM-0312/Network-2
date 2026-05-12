@@ -10,16 +10,16 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8289457684f758f4eb364ef174d447af, type: 3}
-  m_Name: Throwable Item Definition
+  m_Name: Flashbang Item Definition
   m_EditorClassIdentifier: 
   itemId: 10
-  displayName: throwable
+  displayName: Flashbang
   icon: {fileID: 0}
   heldViewPrefab: {fileID: 201130747161140256, guid: 465db6bb178301046bc9094f34d6ae43, type: 3}
-  heldLocalPosition: {x: 0, y: 0, z: 0}
+  heldLocalPosition: {x: 0, y: -0.1, z: 0}
   heldLocalEulerAngles: {x: -90, y: 0, z: 0}
-  heldLocalScale: {x: 0.4, y: 0.4, z: 0.4}
+  heldLocalScale: {x: 0.3, y: 0.3, z: 0.3}
   projectilePrefab:
-    RawGuidValue: 465db6bb178301046bc9094f34d6ae43
+    RawGuidValue: a81266ce3dbf7374da60884b020c91e4
   throwForce: 15
   upwardForce: 1.5

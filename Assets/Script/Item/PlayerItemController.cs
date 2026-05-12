@@ -76,16 +76,26 @@ public class PlayerItemController : NetworkBehaviour
         if (!equipmentBar.TryConsumeAmmo(slotIndex, 1))
             return;
 
+        Vector3 throwDir = transform.forward;
+        throwDir.y = 0f;
+
+        if (throwDir.sqrMagnitude < 0.0001f)
+            throwDir = transform.forward;
+
+        throwDir.Normalize();
+
+        Quaternion throwRot = Quaternion.LookRotation(throwDir, Vector3.up);
+
         Runner.Spawn(
             item.projectilePrefab,
             throwPoint.position,
-            throwPoint.rotation,
+            throwRot,
             Object.InputAuthority,
             (runner, obj) =>
             {
                 ThrowableProjectile projectile = obj.GetComponent<ThrowableProjectile>();
                 if (projectile != null)
-                    projectile.Init(Object.InputAuthority, item.throwForce, item.upwardForce, item.heldLocalScale);
+                    projectile.Init(Object.InputAuthority, item.throwForce, item.upwardForce);
             }
         );
     }

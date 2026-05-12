@@ -12,5 +12,5 @@ public class ItemDefinition : ScriptableObject
     [Header("Held View")]
     public Vector3 heldLocalPosition;
     public Vector3 heldLocalEulerAngles;
-    public Vector3 heldLocalScale;
+    public Vector3 heldLocalScale = Vector3.one;
 }
