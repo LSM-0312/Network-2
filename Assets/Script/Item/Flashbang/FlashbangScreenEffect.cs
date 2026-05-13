@@ -7,7 +7,7 @@ public class FlashbangScreenEffect : MonoBehaviour
 
     [SerializeField] private CanvasGroup whiteGroup;
     [SerializeField] private Camera localCamera;
-    [SerializeField] private float holdTime = 0.15f;
+    [SerializeField] private float holdTime = 0.5f;
 
     private Coroutine flashRoutine;
 
@@ -36,7 +36,6 @@ public class FlashbangScreenEffect : MonoBehaviour
     {
         if (localCamera == null)
         {
-            Debug.Log("[FlashbangScreenEffect] Local camera is null");
             return false;
         }
 
@@ -52,8 +51,6 @@ public class FlashbangScreenEffect : MonoBehaviour
 
         float minDot = Mathf.Cos((viewAngle * 0.5f) * Mathf.Deg2Rad);
         float dot = Vector3.Dot(localCamera.transform.forward, toFlash);
-
-        Debug.Log($"[FlashbangScreenEffect] Camera: {localCamera.name}, Dot: {dot}, MinDot: {minDot}");
 
         if (dot < minDot)
             return false;
@@ -71,15 +68,6 @@ public class FlashbangScreenEffect : MonoBehaviour
             StopCoroutine(flashRoutine);
 
         flashRoutine = StartCoroutine(FlashRoutine(fadeTime));
-    }
-
-    private void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.F))
-        {
-            Debug.Log("[FlashbangScreenEffect] F test pressed");
-            Play(2.5f);
-        }
     }
 
     private IEnumerator FlashRoutine(float fadeTime)

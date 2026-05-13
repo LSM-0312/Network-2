@@ -745,7 +745,7 @@ MonoBehaviour:
   itemCatalog: {fileID: 11400000, guid: 9b508de46461c9d49bd2e6cda436c479, type: 2}
   copDefaultItem: {fileID: 11400000, guid: bdbf39a271e09404eb1cc1ff59130afc, type: 2}
   robberDefaultItem: {fileID: 11400000, guid: c429183e18567b84ba3bd73918ae2610, type: 2}
-  robberStartThrowableItem: {fileID: 11400000, guid: bb5c1bf633cb5f747b2c0bf1d820c743, type: 2}
+  robberStartThrowableItem: {fileID: 11400000, guid: 337fdd1d86348764a96d53ec8224dd10, type: 2}
   robberStartThrowableAmmo: 10
   _CurrentSlotIndex: 0
 --- !u!114 &7798990355720764978

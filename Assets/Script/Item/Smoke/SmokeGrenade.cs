@@ -5,7 +5,8 @@ public class SmokeGrenade : ThrowableProjectile
 {
     [Header("Smoke")]
     [SerializeField] private float fuseTime = 3f;
-    [SerializeField] private float smokeDuration = 10f;
+    [SerializeField] private float smokeEmitDuration = 10f;
+    [SerializeField] private float smokeFadeDelay = 4f;
 
     [Header("View")]
     [SerializeField] private Transform throwModelRoot;
@@ -17,14 +18,18 @@ public class SmokeGrenade : ThrowableProjectile
     [SerializeField] private AudioClip smokeStartSound;
 
     [Networked] private TickTimer fuseTimer { get; set; }
+    [Networked] private TickTimer stopEmitTimer { get; set; }
     [Networked] private TickTimer despawnTimer { get; set; }
     [Networked] private NetworkBool smoked { get; set; }
+    [Networked] private NetworkBool smokeEmitStopped { get; set; }
 
     private bool smokeViewPlayed;
+    private bool smokeViewStopped;
 
     public override void Spawned()
     {
         smokeViewPlayed = false;
+        smokeViewStopped = false;
 
         if (smokeBurstParticle != null)
             smokeBurstParticle.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
@@ -51,16 +56,20 @@ public class SmokeGrenade : ThrowableProjectile
         if (!smoked && fuseTimer.Expired(Runner))
             StartSmoke();
 
-        if (smoked && despawnTimer.Expired(Runner))
+        if (smoked && !smokeEmitStopped && stopEmitTimer.Expired(Runner))
+            StopSmokeEmission();
+
+        if (smokeEmitStopped && despawnTimer.Expired(Runner))
             Runner.Despawn(Object);
     }
 
     public override void Render()
     {
-        if (!smoked)
-            return;
+        if (smoked)
+            PlaySmokeView();
 
-        PlaySmokeView();
+        if (smokeEmitStopped)
+            StopSmokeView();
     }
 
     private void StartSmoke()
@@ -70,7 +79,16 @@ public class SmokeGrenade : ThrowableProjectile
         StopPhysics();
         PlaySmokeView();
 
-        despawnTimer = TickTimer.CreateFromSeconds(Runner, smokeDuration);
+        stopEmitTimer = TickTimer.CreateFromSeconds(Runner, smokeEmitDuration);
+    }
+
+    private void StopSmokeEmission()
+    {
+        smokeEmitStopped = true;
+
+        StopSmokeView();
+
+        despawnTimer = TickTimer.CreateFromSeconds(Runner, smokeFadeDelay);
     }
 
     private void StopPhysics()
@@ -109,6 +127,17 @@ public class SmokeGrenade : ThrowableProjectile
 
         if (audioSource != null && smokeStartSound != null)
             audioSource.PlayOneShot(smokeStartSound);
+    }
+
+    private void StopSmokeView()
+    {
+        if (smokeViewStopped)
+            return;
+
+        smokeViewStopped = true;
+
+        if (smokeLoopParticle != null)
+            smokeLoopParticle.Stop(true, ParticleSystemStopBehavior.StopEmitting);
     }
 
     private void HideThrowModel()

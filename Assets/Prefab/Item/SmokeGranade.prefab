@@ -106,7 +106,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   rb: {fileID: -4460513487785064081}
   fuseTime: 3
-  smokeDuration: 10
+  smokeEmitDuration: 11
+  smokeFadeDelay: 8
   throwModelRoot: {fileID: 4999386426840999874}
   smokeBurstParticle: {fileID: 4320220851494070370}
   smokeLoopParticle: {fileID: 9183106878407087435}

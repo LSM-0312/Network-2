@@ -239,8 +239,9 @@ MonoBehaviour:
   rb: {fileID: -1168377368084348694}
   fuseTime: 2
   flashRadius: 8
-  flashFadeTime: 2.5
-  despawnDelay: 1.5
+  flashFadeTime: 5
+  despawnDelay: 3
+  flashViewAngle: 120
   playerLayerName: Player
   obstacleLayerNames:
   - Default
