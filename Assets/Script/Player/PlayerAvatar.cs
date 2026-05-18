@@ -88,8 +88,8 @@ public class PlayerAvatar : NetworkBehaviour
                 continue;
 
             targetRenderers[i].GetPropertyBlock(mpb);
-            mpb.SetColor("_BaseColor", color);
-            mpb.SetColor("_Color", color);
+            mpb.SetColor("_BaseColor", color); // URP용 셰이더
+            /*mpb.SetColor("_Color", color); 기본 셰이더 -> URP 사용중인데 굳이 사용할 필요가 없음 (_Color와 _BaseColor의 차이)*/
             targetRenderers[i].SetPropertyBlock(mpb);
         }
     }

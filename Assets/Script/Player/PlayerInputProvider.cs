@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 #endif
 
-public class InputProvider : NetworkBehaviour, INetworkRunnerCallbacks
+public class PlayerInputProvider : NetworkBehaviour, INetworkRunnerCallbacks
 {
     private bool jumpPressed;
     private bool mouse0Pressed;
