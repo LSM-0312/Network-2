@@ -28,22 +28,26 @@ public class MeleeAttack : NetworkBehaviour
         if (item == null)
             return false;
 
-        if (health != null && !health.CanControl)
+        if (avatar == null || avatar.Role != PlayerRole.Cop)
+            return false;
+
+        if (health == null || !health.CanControl)
             return false;
 
         if (!cooldownTimer.ExpiredOrNotRunning(Runner))
             return false;
 
-        IDamageable target = FindBestTarget(item);
+        cooldownTimer = TickTimer.CreateFromSeconds(Runner, item.cooldown);
+
+        PlayerHealth target = FindBestTarget(item);
         if (target == null)
-            return false;
+            return true;
 
         target.ApplyDamage(item.damage);
-        cooldownTimer = TickTimer.CreateFromSeconds(Runner, item.cooldown);
         return true;
     }
 
-    private IDamageable FindBestTarget(MeleeItemDefinition item)
+    private PlayerHealth FindBestTarget(MeleeItemDefinition item)
     {
         Vector3 origin = transform.position + Vector3.up * attackHeight + transform.forward * (item.attackRange * 0.5f);
 
@@ -55,7 +59,7 @@ public class MeleeAttack : NetworkBehaviour
             QueryTriggerInteraction.Ignore
         );
 
-        IDamageable bestTarget = null;
+        PlayerHealth bestTarget = null;
         float bestSqr = float.MaxValue;
         float minDot = Mathf.Cos(attackHalfAngle * Mathf.Deg2Rad);
 
@@ -63,10 +67,6 @@ public class MeleeAttack : NetworkBehaviour
         {
             Collider col = hitBuffer[i];
             if (col == null)
-                continue;
-
-            IDamageable damageable = FindDamageable(col);
-            if (damageable == null)
                 continue;
 
             PlayerHealth targetHealth = col.GetComponentInParent<PlayerHealth>();
@@ -83,7 +83,7 @@ public class MeleeAttack : NetworkBehaviour
             if (targetAvatar == null)
                 continue;
 
-            if (!IsEnemyRole(avatar != null ? avatar.Role : PlayerRole.None, targetAvatar.Role))
+            if (targetAvatar.Role != PlayerRole.Robber)
                 continue;
 
             Vector3 toTarget = targetHealth.transform.position - transform.position;
@@ -103,34 +103,10 @@ public class MeleeAttack : NetworkBehaviour
             if (sqr < bestSqr)
             {
                 bestSqr = sqr;
-                bestTarget = damageable;
+                bestTarget = targetHealth;
             }
         }
 
         return bestTarget;
-    }
-
-    private IDamageable FindDamageable(Collider col)
-    {
-        MonoBehaviour[] behaviours = col.GetComponentsInParent<MonoBehaviour>(true);
-
-        for (int i = 0; i < behaviours.Length; i++)
-        {
-            if (behaviours[i] is IDamageable damageable)
-                return damageable;
-        }
-
-        return null;
-    }
-
-    private bool IsEnemyRole(PlayerRole attackerRole, PlayerRole targetRole)
-    {
-        if (attackerRole == PlayerRole.Cop && targetRole == PlayerRole.Robber)
-            return true;
-
-        if (attackerRole == PlayerRole.Robber && targetRole == PlayerRole.Cop)
-            return true;
-
-        return false;
     }
 }

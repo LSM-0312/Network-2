@@ -66,7 +66,6 @@ public class PlayerMove : NetworkBehaviour
         if (rb != null)
             rb.interpolation = RigidbodyInterpolation.None;
     }
-
     private void AssignAnimationIDs()
     {
         animIDSpeed = Animator.StringToHash("Speed");
@@ -92,6 +91,116 @@ public class PlayerMove : NetworkBehaviour
         animator.SetBool(animIDFreeFall, !grounded && verticalVelocity < -0.1f);
     }
 
+
+    public override void FixedUpdateNetwork()
+    {
+        if (!GetInput(out NetworkInputData input))
+            return;
+
+        Vector3 moveWorld = input.direction;
+        moveWorld.y = 0f;
+
+        float inputMag = Mathf.Clamp01(moveWorld.magnitude);
+
+        Vector3 desiredMoveDir = Vector3.zero;
+        if (moveWorld.sqrMagnitude > 0.0001f)
+            desiredMoveDir = moveWorld.normalized;
+
+        bool groundProbe = IsGrounded(out RaycastHit groundHit);
+        float groundDist = groundProbe ? groundHit.distance : float.PositiveInfinity;
+
+        bool groundedContact = groundProbe && groundDist <= groundedContactDistance;
+        bool groundedSnap = groundProbe && groundDist <= groundedSnapDistance;
+        bool groundedAnim = groundProbe && groundDist <= groundedAnimDistance;
+        bool groundedForPhysics = groundedContact || groundedSnap;
+
+        bool canControl = health == null || health.CanControl;
+
+        float targetSpeed = input.buttons.IsSet((int)InputButton.Sprint) ? runSpeed : walkSpeed;
+        float moveSpeed = canControl ? targetSpeed * inputMag : 0f;
+
+        // 로컬 표시값만 먼저 갱신
+        if (Object.HasInputAuthority)
+        {
+            localAnimSpeed = moveSpeed;
+            localGrounded = groundedAnim;
+            localVerticalVel = rb.velocity.y;
+        }
+
+        // 로컬 회전 반응만 먼저 처리
+        if (canControl && inputMag > rotateInputDeadzone && desiredMoveDir.sqrMagnitude > 0.0001f)
+        {
+            lastStableLookDir = desiredMoveDir;
+
+            float targetYaw = Mathf.Atan2(lastStableLookDir.x, lastStableLookDir.z) * Mathf.Rad2Deg;
+            Quaternion targetRot = Quaternion.Euler(0f, targetYaw, 0f);
+
+            Quaternion newRot = Quaternion.Slerp(
+                rb.rotation,
+                targetRot,
+                rotateLerp * Runner.DeltaTime
+            );
+
+            rb.MoveRotation(newRot);
+        }
+
+        // 실제 Rigidbody 속도 제어는 State Authority만 실행
+        if (!Object.HasStateAuthority)
+            return;
+
+        rb.angularVelocity = Vector3.zero;
+
+        if (!canControl)
+        {
+            Vector3 stop = rb.velocity;
+            stop.x = 0f;
+            stop.z = 0f;
+            rb.velocity = stop;
+
+            animSpeed = 0f;
+            netGrounded = groundedAnim;
+            netVerticalVel = rb.velocity.y;
+            previousButtons = input.buttons;
+
+            return;
+        }
+
+        Vector3 velocity = rb.velocity;
+        Vector3 planar = desiredMoveDir * moveSpeed;
+
+        velocity.x = planar.x;
+        velocity.z = planar.z;
+
+        bool jumpPressed = input.buttons.WasPressed(previousButtons, (int)InputButton.Jump);
+
+        if (jumpPressed && groundProbe)
+        {
+            velocity.y = jumpForce;
+        }
+        else
+        {
+            if (groundedForPhysics && velocity.y <= 0f && groundDist <= groundedSnapDistance)
+            {
+                Vector3 pos = rb.position;
+                pos.y -= groundDist;
+                rb.MovePosition(pos);
+
+                groundedContact = true;
+                groundedAnim = true;
+            }
+
+            if (groundedContact && velocity.y < -groundedVelClamp)
+                velocity.y = -groundedVelClamp;
+        }
+
+        rb.velocity = velocity;
+
+        animSpeed = moveSpeed;
+        netGrounded = groundedAnim;
+        netVerticalVel = velocity.y;
+        previousButtons = input.buttons;
+    }
+    /*
     public override void FixedUpdateNetwork()
     {
         if (health != null && !health.CanControl)
@@ -204,6 +313,7 @@ public class PlayerMove : NetworkBehaviour
 
         previousButtons = input.buttons;
     }
+    */
 
     private bool IsGrounded(out RaycastHit hit)
     {

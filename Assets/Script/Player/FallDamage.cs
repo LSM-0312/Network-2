@@ -87,4 +87,15 @@ public class FallDamage : NetworkBehaviour
             QueryTriggerInteraction.Ignore
         );
     }
+    public void ResetRound()
+    {
+        if (!Object.HasStateAuthority)
+            return;
+
+        if (rb == null)
+            rb = GetComponent<Rigidbody>();
+
+        wasGrounded = IsGrounded(out _);
+        fallStartY = rb.position.y;
+    }
 }

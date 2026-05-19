@@ -99,4 +99,11 @@ public class PlayerItemController : NetworkBehaviour
             }
         );
     }
+    public void ResetRound()
+    {
+        if (!Object.HasStateAuthority)
+            return;
+
+        // 라운드 시작 시 아이템 수량 회복
+    }
 }

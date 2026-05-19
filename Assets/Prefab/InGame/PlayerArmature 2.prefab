@@ -398,7 +398,6 @@ GameObject:
   - component: {fileID: 2978095257811547885}
   - component: {fileID: 2729546098913138552}
   - component: {fileID: -4967492758880432229}
-  - component: {fileID: 1113964669022438563}
   - component: {fileID: 7647273314150020590}
   - component: {fileID: 405606815467210492}
   - component: {fileID: 1054353340413725343}
@@ -502,7 +501,6 @@ MonoBehaviour:
   Flags: 262145
   NestedObjects: []
   NetworkedBehaviours:
-  - {fileID: 1113964669022438563}
   - {fileID: 7647273314150020590}
   - {fileID: 405606815467210492}
   - {fileID: 1054353340413725343}
@@ -537,18 +535,6 @@ CapsuleCollider:
   m_Height: 1.8
   m_Direction: 1
   m_Center: {x: 0, y: 0.9, z: 0}
---- !u!114 &1113964669022438563
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1147487831468856441}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f5cfda58b6b5289498c94be6aa7c8a14, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &7647273314150020590
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -573,8 +559,18 @@ MonoBehaviour:
   groundedSnapDistance: 0.06
   groundedAnimDistance: 0.18
   groundedVelClamp: 0.5
-  LandingAudioClip: {fileID: 0}
-  FootstepAudioClips: []
+  LandingAudioClip: {fileID: 8300000, guid: ff697d3070687ce4583faa0561a145a2, type: 3}
+  FootstepAudioClips:
+  - {fileID: 8300000, guid: 72f526a6a9890f643a88e85a61c86c8a, type: 3}
+  - {fileID: 8300000, guid: 85016e0f2b01da248b9663dd49a161b0, type: 3}
+  - {fileID: 8300000, guid: 186de84b3207156479abe98f4958fed0, type: 3}
+  - {fileID: 8300000, guid: 1a91fcd19acf1e54bba0945d9f390849, type: 3}
+  - {fileID: 8300000, guid: 14e8a8d2158bec840b56c54f5266e692, type: 3}
+  - {fileID: 8300000, guid: 29841e7d5bbfb5b419c9ad16ca8bc4c1, type: 3}
+  - {fileID: 8300000, guid: dd1af302b8902684d9381de1f2d3a5af, type: 3}
+  - {fileID: 8300000, guid: 67c8b33e424ccdc4486edf538ab91c5a, type: 3}
+  - {fileID: 8300000, guid: 274649b0e221539409070ebf6c18918b, type: 3}
+  - {fileID: 8300000, guid: a3194b8bbc96ef84fab1f98f4b7dae3e, type: 3}
   FootstepAudioVolume: 0.5
 --- !u!114 &405606815467210492
 MonoBehaviour:

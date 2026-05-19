@@ -5,8 +5,10 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 #endif
 
-public class PlayerInputProvider : NetworkBehaviour, INetworkRunnerCallbacks
+public class PlayerInputProvider : MonoBehaviour, INetworkRunnerCallbacks
 {
+    private NetworkRunner runner;
+
     private bool jumpPressed;
     private bool mouse0Pressed;
     private bool mouse1Pressed;
@@ -16,22 +18,33 @@ public class PlayerInputProvider : NetworkBehaviour, INetworkRunnerCallbacks
     private bool slot3Pressed;
     private bool slot4Pressed;
 
-    public override void Spawned()
+    private void Start()
     {
-        if (Object.HasInputAuthority)
-            Runner.AddCallbacks(this);
+        if (GameNetworkManager.Instance == null)
+        {
+            Debug.LogError("GameNetworkManager.Instance가 없음");
+            return;
+        }
+
+        runner = GameNetworkManager.Instance.GetRunner();
+
+        if (runner == null)
+        {
+            Debug.LogError("Runner가 없음");
+            return;
+        }
+
+        runner.AddCallbacks(this);
     }
 
-    public override void Despawned(NetworkRunner runner, bool hasState)
+    private void OnDestroy()
     {
-        runner.RemoveCallbacks(this);
+        if (runner != null)
+            runner.RemoveCallbacks(this);
     }
 
     private void Update()
     {
-        if (Object == null || !Object.HasInputAuthority)
-            return;
-
 #if ENABLE_INPUT_SYSTEM
         if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
             jumpPressed = true;
@@ -79,9 +92,6 @@ public class PlayerInputProvider : NetworkBehaviour, INetworkRunnerCallbacks
 
     public void OnInput(NetworkRunner runner, NetworkInput input)
     {
-        if (Object == null || !Object.HasInputAuthority)
-            return;
-
         NetworkInputData data = default;
 
         float x = 0f;
@@ -113,8 +123,16 @@ public class PlayerInputProvider : NetworkBehaviour, INetworkRunnerCallbacks
 
         camF.y = 0f;
         camR.y = 0f;
-        camF.Normalize();
-        camR.Normalize();
+
+        if (camF.sqrMagnitude > 0.0001f)
+            camF.Normalize();
+        else
+            camF = Vector3.forward;
+
+        if (camR.sqrMagnitude > 0.0001f)
+            camR.Normalize();
+        else
+            camR = Vector3.right;
 
         Vector3 moveWorld = camF * z + camR * x;
         moveWorld.y = 0f;
