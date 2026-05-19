@@ -1,7 +1,7 @@
 using Fusion;
 using UnityEngine;
 
-public class GameHUDUI : MonoBehaviour
+public class GmaeHUDUI : MonoBehaviour
 {
     [Header("Panels")]
     [SerializeField] private HpUI hpPanel;
