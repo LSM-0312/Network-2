@@ -31,6 +31,8 @@ public class GameStateManager : NetworkBehaviour
     [Networked] private TickTimer roundTimer { get; set; }
     [Networked] private TickTimer stateTimer { get; set; }
 
+    [Networked] private NetworkBool roomSceneLoadRequested { get; set; }
+
     public bool IsPlaying => State == GameState.Playing;
 
     public float RemainingRoundTime
@@ -59,6 +61,7 @@ public class GameStateManager : NetworkBehaviour
         AliveRobberCount = 0;
         roundTimer = TickTimer.None;
         stateTimer = TickTimer.None;
+        roomSceneLoadRequested = false;
     }
 
     public override void Despawned(NetworkRunner runner, bool hasState)
@@ -87,7 +90,7 @@ public class GameStateManager : NetworkBehaviour
                 break;
 
             case GameState.MatchEnded:
-                UpdateMatchEnded();
+                UpdateGameEnded();
                 break;
         }
     }
@@ -232,13 +235,19 @@ public class GameStateManager : NetworkBehaviour
         StartNextRound();
     }
 
-    private void UpdateMatchEnded()
+    private void UpdateGameEnded()
     {
+        if (roomSceneLoadRequested)
+            return;
+
         if (!stateTimer.Expired(Runner))
             return;
 
         if (!Runner.IsSceneAuthority)
             return;
+
+        roomSceneLoadRequested = true;
+        stateTimer = TickTimer.None;
 
         Runner.LoadScene(SceneRef.FromIndex(roomSceneBuildIndex));
     }

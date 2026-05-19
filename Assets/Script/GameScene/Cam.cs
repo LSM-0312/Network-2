@@ -12,7 +12,7 @@ public class Cam : NetworkBehaviour
     [SerializeField] private UnityEngine.Behaviour inputProvider;
 
     [Header("Player Anchor")]
-    [SerializeField] private Transform playerCameraRoot;   // PlayerCameraRoot ³Ö±â
+    [SerializeField] private Transform playerCameraRoot;
     [SerializeField] private Vector3 anchorOffset = Vector3.zero;
 
     [Header("Mouse Look")]
@@ -21,13 +21,17 @@ public class Cam : NetworkBehaviour
     [SerializeField] private float bottomClamp = -30f;
     [SerializeField] private bool invertY = false;
 
-    private Transform _pivot;
-    private float _yaw;
-    private float _pitch;
+    private Transform pivot;
+    private float yaw;
+    private float pitch;
+    private bool isLocalCameraOwner;
 
     public override void Spawned()
     {
-        if (!Object.HasInputAuthority) return;
+        if (!Object.HasInputAuthority)
+            return;
+
+        isLocalCameraOwner = true;
 
         if (freeLook == null)
             freeLook = UnityEngine.Object.FindFirstObjectByType<CinemachineFreeLook>();
@@ -50,53 +54,99 @@ public class Cam : NetworkBehaviour
         freeLook.m_XAxis.m_InputAxisName = string.Empty;
         freeLook.m_YAxis.m_InputAxisName = string.Empty;
 
-        _pivot = new GameObject($"CamPivot_{Object.Id}").transform;
-        _pivot.position = playerCameraRoot.position + anchorOffset;
+        pivot = new GameObject($"CamPivot_{Object.Id}").transform;
+        pivot.position = playerCameraRoot.position + anchorOffset;
 
-        _yaw = _pivot.eulerAngles.y;
-        _pitch = 0f;
+        yaw = pivot.eulerAngles.y;
+        pitch = 0f;
 
-        freeLook.Follow = _pivot;
-        freeLook.LookAt = _pivot;
+        freeLook.Follow = pivot;
+        freeLook.LookAt = pivot;
         freeLook.Priority = 100;
 
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
+        LockCursor();
     }
-
 
     private void LateUpdate()
     {
-        if (!Object || !Object.HasInputAuthority) return;
-        if (_pivot == null || playerCameraRoot == null) return;
+        if (!Object || !Object.HasInputAuthority)
+            return;
 
-        _pivot.position = playerCameraRoot.position + anchorOffset;
+        if (pivot == null || playerCameraRoot == null)
+            return;
+
+        pivot.position = playerCameraRoot.position + anchorOffset;
 
 #if ENABLE_INPUT_SYSTEM
-        if (Mouse.current == null) return;
+        if (Mouse.current == null)
+            return;
 
         Vector2 delta = Mouse.current.delta.ReadValue();
 
-        _yaw += delta.x * mouseSensitivity;
+        yaw += delta.x * mouseSensitivity;
+
         float ySign = invertY ? 1f : -1f;
-        _pitch += delta.y * mouseSensitivity * ySign;
+        pitch += delta.y * mouseSensitivity * ySign;
 
-        _pitch = ClampAngle(_pitch, bottomClamp, topClamp);
+        pitch = ClampAngle(pitch, bottomClamp, topClamp);
 
-        _pivot.rotation = Quaternion.Euler(_pitch, _yaw, 0f);
+        pivot.rotation = Quaternion.Euler(pitch, yaw, 0f);
+#else
+        yaw += Input.GetAxisRaw("Mouse X") * mouseSensitivity * 10f;
+
+        float ySign = invertY ? 1f : -1f;
+        pitch += Input.GetAxisRaw("Mouse Y") * mouseSensitivity * 10f * ySign;
+
+        pitch = ClampAngle(pitch, bottomClamp, topClamp);
+
+        pivot.rotation = Quaternion.Euler(pitch, yaw, 0f);
 #endif
+    }
+
+    private void OnDisable()
+    {
+        CleanupLocalCamera();
     }
 
     private void OnDestroy()
     {
-        if (_pivot != null)
-            Destroy(_pivot.gameObject);
+        CleanupLocalCamera();
+    }
+
+    private void CleanupLocalCamera()
+    {
+        if (isLocalCameraOwner)
+            UnlockCursor();
+
+        if (pivot != null)
+        {
+            Destroy(pivot.gameObject);
+            pivot = null;
+        }
+
+        isLocalCameraOwner = false;
+    }
+
+    private void LockCursor()
+    {
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+    }
+
+    private void UnlockCursor()
+    {
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
     }
 
     private static float ClampAngle(float angle, float min, float max)
     {
-        while (angle < -360f) angle += 360f;
-        while (angle > 360f) angle -= 360f;
+        while (angle < -360f)
+            angle += 360f;
+
+        while (angle > 360f)
+            angle -= 360f;
+
         return Mathf.Clamp(angle, min, max);
     }
 }

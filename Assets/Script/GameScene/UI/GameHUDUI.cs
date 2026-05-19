@@ -1,7 +1,7 @@
 using Fusion;
 using UnityEngine;
 
-public class GmaeHUDUI : MonoBehaviour
+public class GameHUDUI : MonoBehaviour
 {
     [Header("Panels")]
     [SerializeField] private HpUI hpPanel;
@@ -14,33 +14,30 @@ public class GmaeHUDUI : MonoBehaviour
 
     private void Update()
     {
+        GameStateManager manager = GameStateManager.Instance;
+
+        if (manager == null)
+        {
+            ClearAll();
+            ClearLocalPlayerCache();
+            return;
+        }
+
         ResolveLocalPlayer();
 
         if (hpPanel != null)
         {
-            if (localHealth != null)
+            if (IsLocalHealthUsable())
                 hpPanel.SetHp(localHealth.CurrentHp, localHealth.MaxHp, localHealth.IsDead);
             else
                 hpPanel.Clear();
         }
 
-        GameStateManager manager = GameStateManager.Instance;
-
         if (roundPanel != null)
-        {
-            if (manager != null)
-                roundPanel.SetRound(manager);
-            else
-                roundPanel.Clear();
-        }
+            roundPanel.SetRound(manager);
 
         if (centerMessagePanel != null)
-        {
-            if (manager != null)
-                centerMessagePanel.SetMessage(manager.GetCenterMessage());
-            else
-                centerMessagePanel.Clear();
-        }
+            centerMessagePanel.SetMessage(manager.GetCenterMessage());
     }
 
     private void ResolveLocalPlayer()
@@ -50,18 +47,70 @@ public class GmaeHUDUI : MonoBehaviour
 
         if (runner == null || !runner.IsRunning)
         {
-            localAvatar = null;
-            localHealth = null;
+            ClearLocalPlayerCache();
             return;
         }
 
-        if (localAvatar != null && localHealth != null)
+        if (IsLocalPlayerCacheUsable())
             return;
+
+        ClearLocalPlayerCache();
 
         if (runner.TryGetPlayerObject(runner.LocalPlayer, out NetworkObject obj) && obj != null)
         {
             localAvatar = obj.GetComponent<PlayerAvatar>();
             localHealth = obj.GetComponent<PlayerHealth>();
         }
+    }
+
+    private bool IsLocalPlayerCacheUsable()
+    {
+        if (localAvatar == null || localHealth == null)
+            return false;
+
+        if (localAvatar.Object == null || localHealth.Object == null)
+            return false;
+
+        return true;
+    }
+
+    private bool IsLocalHealthUsable()
+    {
+        if (localHealth == null)
+            return false;
+
+        if (localHealth.Object == null)
+            return false;
+
+        return true;
+    }
+
+    private void ClearAll()
+    {
+        if (hpPanel != null)
+            hpPanel.Clear();
+
+        if (roundPanel != null)
+            roundPanel.Clear();
+
+        if (centerMessagePanel != null)
+            centerMessagePanel.Clear();
+    }
+
+    private void ClearLocalPlayerCache()
+    {
+        localAvatar = null;
+        localHealth = null;
+    }
+
+    private void OnDisable()
+    {
+        ClearAll();
+        ClearLocalPlayerCache();
+    }
+
+    private void OnDestroy()
+    {
+        ClearLocalPlayerCache();
     }
 }
