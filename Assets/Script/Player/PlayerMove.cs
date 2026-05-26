@@ -1,4 +1,5 @@
 using Fusion;
+using Fusion.Addons.Physics;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
@@ -27,6 +28,7 @@ public class PlayerMove : NetworkBehaviour
 
     private PlayerHealth health;
     private Rigidbody rb;
+    private NetworkRigidbody3D nrb;
     private Animator animator;
 
     private Vector3 lastStableLookDir = Vector3.forward;
@@ -48,10 +50,13 @@ public class PlayerMove : NetworkBehaviour
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
+        nrb = GetComponent<NetworkRigidbody3D>();
 
+        /* nrb를 불러오는 순간 동기화를 다 해주기 때문에 rb에선 필요 없음
         rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
         rb.interpolation = RigidbodyInterpolation.None;
         rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+        */
         TryGetComponent(out health);
     }
 
@@ -61,11 +66,13 @@ public class PlayerMove : NetworkBehaviour
         AssignAnimationIDs();
     }
 
+    /* 필요없음
     public override void Spawned()
     {
         if (rb != null)
             rb.interpolation = RigidbodyInterpolation.None;
     }
+    */
     private void AssignAnimationIDs()
     {
         animIDSpeed = Animator.StringToHash("Speed");

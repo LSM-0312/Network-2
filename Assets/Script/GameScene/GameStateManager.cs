@@ -70,7 +70,7 @@ public class GameStateManager : NetworkBehaviour
             Instance = null;
     }
 
-    public override void FixedUpdateNetwork()
+    public override void FixedUpdateNetwork() // good
     {
         if (!Object.HasStateAuthority)
             return;
