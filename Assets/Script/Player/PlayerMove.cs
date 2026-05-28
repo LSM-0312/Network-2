@@ -21,6 +21,13 @@ public class PlayerMove : NetworkBehaviour
     [SerializeField] private float groundedAnimDistance = 0.18f;
     [SerializeField] private float groundedVelClamp = 0.5f;
 
+    [Header("Step")]
+    [SerializeField] private float maxStepHeight = 0.28f;          // 수정: 자동으로 올라갈 수 있는 턱 높이
+    [SerializeField] private float stepCheckDistance = 0.35f;     // 수정: 발 앞 턱 검사 거리
+    [SerializeField] private float stepSkin = 0.03f;              // 수정: 턱 위로 살짝 올리는 여유값
+    [SerializeField] private float stepSphereRadius = 0.18f;      // 수정: 턱 검사 구 반지름
+    [SerializeField] private float minStepNormalY = 0.65f;        // 수정: 너무 가파른 벽은 턱으로 보지 않음
+
     [Networked] private float animSpeed { get; set; }
     [Networked] private NetworkBool netGrounded { get; set; }
     [Networked] private float netVerticalVel { get; set; }
@@ -57,6 +64,7 @@ public class PlayerMove : NetworkBehaviour
         rb.interpolation = RigidbodyInterpolation.None;
         rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
         */
+
         TryGetComponent(out health);
     }
 
@@ -66,13 +74,6 @@ public class PlayerMove : NetworkBehaviour
         AssignAnimationIDs();
     }
 
-    /* 필요없음
-    public override void Spawned()
-    {
-        if (rb != null)
-            rb.interpolation = RigidbodyInterpolation.None;
-    }
-    */
     private void AssignAnimationIDs()
     {
         animIDSpeed = Animator.StringToHash("Speed");
@@ -97,7 +98,6 @@ public class PlayerMove : NetworkBehaviour
         animator.SetBool(animIDJump, !grounded && verticalVelocity > 0.1f);
         animator.SetBool(animIDFreeFall, !grounded && verticalVelocity < -0.1f);
     }
-
 
     public override void FixedUpdateNetwork()
     {
@@ -178,6 +178,35 @@ public class PlayerMove : NetworkBehaviour
         velocity.x = planar.x;
         velocity.z = planar.z;
 
+        bool steppedUp = false;     // 수정: 이번 틱에 턱을 올라갔는지 저장
+
+        // 수정: 이동 중이고 지면 근처일 때만 작은 턱 보정 시도
+        if (groundProbe &&
+            groundedAnim &&
+            inputMag > rotateInputDeadzone &&
+            desiredMoveDir.sqrMagnitude > 0.0001f)
+        {
+            steppedUp = TryStepUp(desiredMoveDir, groundHit);
+
+            if (steppedUp)
+            {
+                groundedContact = true;
+                groundedSnap = true;
+                groundedAnim = true;
+                groundedForPhysics = true;
+
+                if (velocity.y > 0f)
+                    velocity.y = 0f;
+
+                // 수정: 로컬 화면에서도 점프 모션으로 튀지 않게 처리
+                if (Object.HasInputAuthority)
+                {
+                    localGrounded = true;
+                    localVerticalVel = 0f;
+                }
+            }
+        }
+
         bool jumpPressed = input.buttons.WasPressed(previousButtons, (int)InputButton.Jump);
 
         if (jumpPressed && groundProbe)
@@ -186,7 +215,7 @@ public class PlayerMove : NetworkBehaviour
         }
         else
         {
-            if (groundedForPhysics && velocity.y <= 0f && groundDist <= groundedSnapDistance)
+            if (!steppedUp && groundedForPhysics && velocity.y <= 0f && groundDist <= groundedSnapDistance)
             {
                 Vector3 pos = rb.position;
                 pos.y -= groundDist;
@@ -204,123 +233,98 @@ public class PlayerMove : NetworkBehaviour
 
         animSpeed = moveSpeed;
         netGrounded = groundedAnim;
-        netVerticalVel = velocity.y;
-        previousButtons = input.buttons;
-    }
-    /*
-    public override void FixedUpdateNetwork()
-    {
-        if (health != null && !health.CanControl)
-        {
-            if (Object.HasStateAuthority)
-            {
-                Vector3 stop = rb.velocity;
-                stop.x = 0f;
-                stop.z = 0f;
-                rb.velocity = stop;
-            }
 
-            if (Object.HasInputAuthority)
-            {
-                localAnimSpeed = 0f;
-                localGrounded = true;
-                localVerticalVel = rb.velocity.y;
-            }
-
-            if (Object.HasStateAuthority)
-            {
-                animSpeed = 0f;
-                netGrounded = true;
-                netVerticalVel = rb.velocity.y;
-            }
-
-            return;
-        }
-        if (!GetInput(out NetworkInputData input))
-            return;
-
-        Vector3 moveWorld = input.direction;
-        float inputMag = Mathf.Clamp01(moveWorld.magnitude);
-
-        Vector3 desiredMoveDir = Vector3.zero;
-        if (moveWorld.sqrMagnitude > 0.0001f)
-            desiredMoveDir = moveWorld.normalized;
-
-        bool groundProbe = IsGrounded(out RaycastHit groundHit);
-        float groundDist = groundProbe ? groundHit.distance : float.PositiveInfinity;
-
-        bool groundedContact = groundProbe && groundDist <= groundedContactDistance;
-        bool groundedAnim = groundProbe && groundDist <= groundedAnimDistance;
-
-        rb.angularVelocity = Vector3.zero;
-
-        float targetSpeed = input.buttons.IsSet((int)InputButton.Sprint) ? runSpeed : walkSpeed;
-        float moveSpeed = targetSpeed * inputMag;
-
-        Vector3 velocity = rb.velocity;
-        Vector3 planar = desiredMoveDir * moveSpeed;
-
-        velocity.x = planar.x;
-        velocity.z = planar.z;
-
-        if (inputMag > rotateInputDeadzone && desiredMoveDir.sqrMagnitude > 0.0001f)
-            lastStableLookDir = desiredMoveDir;
-
-        if (lastStableLookDir.sqrMagnitude > 0.0001f)
-        {
-            float targetYaw = Mathf.Atan2(lastStableLookDir.x, lastStableLookDir.z) * Mathf.Rad2Deg;
-            Quaternion targetRot = Quaternion.Euler(0f, targetYaw, 0f);
-
-            Quaternion newRot = Quaternion.Slerp(
-                rb.rotation,
-                targetRot,
-                rotateLerp * Runner.DeltaTime
-            );
-
-            rb.MoveRotation(newRot);
-        }
-
-        bool jumpPressed = input.buttons.WasPressed(previousButtons, (int)InputButton.Jump);
-
-        if (jumpPressed && groundProbe)
-        {
-            velocity.y = jumpForce;
-        }
+        // 수정: 턱을 올라간 틱은 점프/낙하 애니메이션 방지
+        if (steppedUp)
+            netVerticalVel = 0f;
         else
-        {
-            if (groundProbe && velocity.y <= 0f && groundDist <= groundedSnapDistance)
-            {
-                Vector3 pos = rb.position;
-                pos.y -= groundDist;
-                rb.MovePosition(pos);
-
-                groundedContact = true;
-                groundedAnim = true;
-            }
-
-            if (groundedContact && velocity.y < -groundedVelClamp)
-                velocity.y = -groundedVelClamp;
-        }
-
-        rb.velocity = velocity;
-
-        if (Object.HasInputAuthority)
-        {
-            localAnimSpeed = moveSpeed;
-            localGrounded = groundedAnim;
-            localVerticalVel = velocity.y;
-        }
-
-        if (Object.HasStateAuthority)
-        {
-            animSpeed = moveSpeed;
-            netGrounded = groundedAnim;
             netVerticalVel = velocity.y;
-        }
 
         previousButtons = input.buttons;
     }
-    */
+
+    private bool TryStepUp(Vector3 moveDir, RaycastHit currentGroundHit)
+    {
+        // 수정: 턱 보정은 서버/호스트 권위에서만 처리
+        if (!Object.HasStateAuthority)
+            return false;
+
+        if (moveDir.sqrMagnitude < 0.0001f)
+            return false;
+
+        var scene = Runner.GetPhysicsScene();
+
+        float groundY = currentGroundHit.point.y;
+
+        Vector3 lowerOrigin = rb.position;
+        lowerOrigin.y = groundY + stepSphereRadius + 0.03f;
+
+        Vector3 upperOrigin = rb.position;
+        upperOrigin.y = groundY + maxStepHeight + stepSphereRadius + 0.08f;
+
+        // 수정: 낮은 위치에서 앞이 막히면 작은 턱 후보
+        bool hasLowObstacle = scene.SphereCast(
+            lowerOrigin,
+            stepSphereRadius,
+            moveDir,
+            out _,
+            stepCheckDistance,
+            groundMask,
+            QueryTriggerInteraction.Ignore
+        );
+
+        if (!hasLowObstacle)
+            return false;
+
+        // 수정: 위쪽도 막혀 있으면 벽으로 보고 올라가지 않음
+        bool upperBlocked = scene.SphereCast(
+            upperOrigin,
+            stepSphereRadius,
+            moveDir,
+            out _,
+            stepCheckDistance,
+            groundMask,
+            QueryTriggerInteraction.Ignore
+        );
+
+        if (upperBlocked)
+            return false;
+
+        Vector3 downOrigin =
+            rb.position +
+            moveDir * (stepCheckDistance + 0.05f) +
+            Vector3.up * (maxStepHeight + 0.4f);
+
+        // 수정: 턱 위에 실제로 밟을 수 있는 바닥이 있는지 확인
+        bool foundStepTop = scene.Raycast(
+            downOrigin,
+            Vector3.down,
+            out RaycastHit stepHit,
+            maxStepHeight + 0.8f,
+            groundMask,
+            QueryTriggerInteraction.Ignore
+        );
+
+        if (!foundStepTop)
+            return false;
+
+        if (stepHit.normal.y < minStepNormalY)
+            return false;
+
+        float stepHeight = stepHit.point.y - groundY;
+
+        if (stepHeight <= 0f)
+            return false;
+
+        if (stepHeight > maxStepHeight)
+            return false;
+
+        Vector3 pos = rb.position;
+        pos.y += stepHeight + stepSkin;
+
+        rb.MovePosition(pos);
+        return true;
+    }
 
     private bool IsGrounded(out RaycastHit hit)
     {
@@ -329,6 +333,7 @@ public class PlayerMove : NetworkBehaviour
         Vector3 origin = rb.position + Vector3.up * 0.35f;
 
         var scene = Runner.GetPhysicsScene();
+
         return scene.SphereCast(
             origin,
             radius,
@@ -360,4 +365,4 @@ public class PlayerMove : NetworkBehaviour
                 AudioSource.PlayClipAtPoint(LandingAudioClip, transform.position, FootstepAudioVolume);
         }
     }
-}
+}   
