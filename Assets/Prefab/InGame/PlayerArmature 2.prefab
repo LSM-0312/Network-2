@@ -519,7 +519,7 @@ CapsuleCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1147487831468856441}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 13400000, guid: 10c69020612b9f7438c3a55a700c950d, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -559,11 +559,14 @@ MonoBehaviour:
   groundedSnapDistance: 0.06
   groundedAnimDistance: 0.18
   groundedVelClamp: 0.5
-  maxStepHeight: 0.28
+  maxStepHeight: 0.35
+  minStepHeight: 0.03
   stepCheckDistance: 0.35
-  stepSkin: 0.03
+  stepSkin: 0.01
   stepSphereRadius: 0.18
-  minStepNormalY: 0.65
+  minStepNormalY: 0.75
+  stepUpSpeed: 0.001
+  jumpGraceTime: 0.12
   LandingAudioClip: {fileID: 8300000, guid: ff697d3070687ce4583faa0561a145a2, type: 3}
   FootstepAudioClips:
   - {fileID: 8300000, guid: 72f526a6a9890f643a88e85a61c86c8a, type: 3}

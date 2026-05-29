@@ -95,8 +95,8 @@ public class PlayerMove : NetworkBehaviour
         animator.SetFloat(animIDSpeed, speed, 0.1f, Time.deltaTime);
         animator.SetFloat(animIDMotionSpeed, speed > 0.1f ? 1f : 0f);
         animator.SetBool(animIDGrounded, grounded);
-        animator.SetBool(animIDJump, !grounded && verticalVelocity > 0.1f);
-        animator.SetBool(animIDFreeFall, !grounded && verticalVelocity < -0.1f);
+        animator.SetBool(animIDJump, !grounded && verticalVelocity > 4f);
+        animator.SetBool(animIDFreeFall, !grounded && verticalVelocity < -1f);
     }
 
     public override void FixedUpdateNetwork()
@@ -178,10 +178,16 @@ public class PlayerMove : NetworkBehaviour
         velocity.x = planar.x;
         velocity.z = planar.z;
 
-        bool steppedUp = false;     // 수정: 이번 틱에 턱을 올라갔는지 저장
+        bool jumpPressed = input.buttons.WasPressed(previousButtons, (int)InputButton.Jump);
+        bool groundedForJump = groundedContact || groundedSnap || groundedAnim;
+        bool wantsJump = jumpPressed && groundedForJump;
 
-        // 수정: 이동 중이고 지면 근처일 때만 작은 턱 보정 시도
-        if (groundProbe &&
+        bool steppedUp = false;
+
+        // 점프하려는 순간에는 턱 보정 금지
+        if (!wantsJump &&
+            velocity.y <= 0.05f &&
+            groundProbe &&
             groundedAnim &&
             inputMag > rotateInputDeadzone &&
             desiredMoveDir.sqrMagnitude > 0.0001f)
@@ -198,7 +204,7 @@ public class PlayerMove : NetworkBehaviour
                 if (velocity.y > 0f)
                     velocity.y = 0f;
 
-                // 수정: 로컬 화면에서도 점프 모션으로 튀지 않게 처리
+                // 턱 보정 중에는 점프/낙하 애니메이션 방지
                 if (Object.HasInputAuthority)
                 {
                     localGrounded = true;
@@ -207,11 +213,21 @@ public class PlayerMove : NetworkBehaviour
             }
         }
 
-        bool jumpPressed = input.buttons.WasPressed(previousButtons, (int)InputButton.Jump);
-
-        if (jumpPressed && groundProbe)
+        if (wantsJump)
         {
             velocity.y = jumpForce;
+
+            groundedContact = false;
+            groundedSnap = false;
+            groundedAnim = false;
+            groundedForPhysics = false;
+
+            // 점프 입력 직후 로컬 애니메이션도 바로 반응
+            if (Object.HasInputAuthority)
+            {
+                localGrounded = false;
+                localVerticalVel = velocity.y;
+            }
         }
         else
         {
@@ -234,8 +250,10 @@ public class PlayerMove : NetworkBehaviour
         animSpeed = moveSpeed;
         netGrounded = groundedAnim;
 
-        // 수정: 턱을 올라간 틱은 점프/낙하 애니메이션 방지
-        if (steppedUp)
+        // 점프한 틱에는 steppedUp보다 점프 속도를 우선 적용
+        if (wantsJump)
+            netVerticalVel = velocity.y;
+        else if (steppedUp)
             netVerticalVel = 0f;
         else
             netVerticalVel = velocity.y;
@@ -365,4 +383,4 @@ public class PlayerMove : NetworkBehaviour
                 AudioSource.PlayClipAtPoint(LandingAudioClip, transform.position, FootstepAudioVolume);
         }
     }
-}   
+}

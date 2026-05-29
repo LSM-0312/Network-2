@@ -140,6 +140,8 @@ public class PlayerInputProvider : MonoBehaviour, INetworkRunnerCallbacks
         float mag = Mathf.Clamp01(moveWorld.magnitude);
         data.direction = mag > 0.0001f ? moveWorld.normalized * mag : Vector3.zero;
 
+        data.cameraForward = camF;
+
         data.buttons.Set((int)InputButton.Sprint, sprint);
         data.buttons.Set((int)InputButton.Jump, jumpPressed);
         data.buttons.Set((int)InputButton.Mouse0, mouse0Pressed);

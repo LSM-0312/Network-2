@@ -17,5 +17,6 @@ public enum InputButton
 public struct NetworkInputData : INetworkInput
 {
     public Vector3 direction;
+    public Vector3 cameraForward;
     public NetworkButtons buttons;
 }
